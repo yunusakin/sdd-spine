@@ -85,6 +85,8 @@ For the full walkthrough and edge cases, see:
 | [`docs/getting-started.md`](docs/getting-started.md) | Full walkthrough (diagrams are in this README) |
 | [`docs/workflow.md`](docs/workflow.md) | Resume, spec changes, re-approval, rollback |
 | [`docs/testing.md`](docs/testing.md) | Repo validation and regression scenarios |
+| [`docs/spec-merge.md`](docs/spec-merge.md) | How to merge specs safely (conflicts, re-approval) |
+| [`docs/multi-project.md`](docs/multi-project.md) | Multi-project and monorepo patterns |
 | [`docs/examples/`](docs/examples/) | Copy-paste scenarios for common app types |
 
 ## Repo Layout

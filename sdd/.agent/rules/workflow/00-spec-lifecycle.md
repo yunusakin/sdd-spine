@@ -29,10 +29,13 @@ When requirements/constraints/tech choices change after approval:
    - summary
    - high-level files touched
    - whether re-approval is required
-4. Re-run intake validation rules (`sdd/.agent/rules/intake/02-validation.md`) for any impacted mandatory fields.
-5. Decide whether re-approval is required (see below).
-6. If re-approval is required: stop, summarize the changes, and ask the user to reply `approved` to continue implementation.
-7. Update sprint files if used:
+4. Update the spec diff report (recommended):
+   - if baseline is not initialized yet: run `python3 scripts/spec-diff.py --init`
+   - otherwise: run `python3 scripts/spec-diff.py --update`
+5. Re-run intake validation rules (`sdd/.agent/rules/intake/02-validation.md`) for any impacted mandatory fields.
+6. Decide whether re-approval is required (see below).
+7. If re-approval is required: stop, summarize the changes, and ask the user to reply `approved` to continue implementation.
+8. Update sprint files if used:
    - `sdd/memory-bank/core/sprint-plan.md`
    - `sdd/memory-bank/core/sprint-current.md`
 
@@ -62,4 +65,3 @@ If code/spec changes need to be undone:
 - Update specs first to reflect the intended state after rollback.
 - Record the rollback in `sdd/memory-bank/core/spec-history.md` with the reason.
 - If the rollback is ambiguous or destructive, ask for confirmation before executing it.
-
