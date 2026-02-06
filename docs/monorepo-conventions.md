@@ -1,12 +1,12 @@
 # Monorepo Conventions
 
 ## Structure
-- `app/` contains all application code (created after approval).
+- `app/` contains all application code (generated after approval).
 - `docs/` contains project documentation.
 - `scripts/` contains helper scripts.
 - `sdd/` contains spec-driven artifacts and rules.
 
-**Note:** The `app/` directory is created automatically after the intake process and approval. If you're using SDD Spine as a template, ensure the agent creates this directory before generating code.
+**Note:** This repository includes `app/README.md` as a placeholder and structure guide. Agents must still wait for approval before generating any application code. If `app/` is missing, create it after approval before writing code.
 
 ## Naming
 - Use lowercase with hyphens for directories and files.

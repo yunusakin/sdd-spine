@@ -38,11 +38,11 @@ Developers can tailor the structure and prompts to a specific agent by updating 
 
 ## Folder Structure
 - `sdd/` spec rules, memory bank, and process artifacts
-- `app/` application code only (created after approval)
+- `app/` application code only (generated after approval)
 - `docs/` project documentation
 - `scripts/` helper scripts
 
-**Note:** The `app/` directory does not exist in this repository because SDD Spine is a template/framework. When you use SDD Spine for your project, the `app/` directory will be created automatically after the intake process and approval. All your application code will live there.
+**Note:** This repository includes `app/README.md` as a placeholder and structure guide. Agents must still wait for explicit approval before generating any application code. After approval, all application code lives under `app/` only.
 
 ## Use Cases
 - Starting a new project with a spec-first process
@@ -64,6 +64,7 @@ Developers can tailor the structure and prompts to a specific agent by updating 
 
 ## Quick Start
 - See `docs/quick-start.md` for a concise, step-by-step guide to running the intake and approval flow.
+- See `docs/examples/` for copy-pasteable example intake answers and scenarios.
 
 ## Roadmap
 - Add templates for common project types
