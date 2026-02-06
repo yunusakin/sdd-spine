@@ -9,6 +9,7 @@
 7. Review the generated spec files under `sdd/memory-bank/`.
    - If you stop mid-intake, re-run `init` later. The agent should resume using `sdd/memory-bank/core/intake-state.md`.
 8. Reply `approved` when you are happy with the specs so the agent can start coding in `app/` (see `app/README.md` for a suggested layout).
+   - If you change requirements after approval, follow `docs/workflow.md` (spec updates + possible re-approval).
 
 <!--
 Example intake answers (very short):

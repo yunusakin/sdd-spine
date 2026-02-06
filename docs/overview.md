@@ -16,6 +16,8 @@ SDD Spine provides a spec-driven backbone that keeps project structure stable wh
 4. Reply `approved` to start coding.
 5. After approval, the agent will ensure `app/` exists (create it if missing) and generate application code under `app/` only.
 
+See `docs/workflow.md` for resume, spec change, and rollback guidance.
+
 ## Key Paths
 - `sdd/` rules, memory bank, and process artifacts
 - `app/` application code only (generated after approval)

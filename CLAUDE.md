@@ -26,6 +26,6 @@ All canonical rules live in `sdd/.agent/`.
 - Intake: `sdd/.agent/rules/intake/00-intake-flow.md`
 - Questions: `sdd/.agent/rules/intake/01-questions.md`
 - Validation: `sdd/.agent/rules/intake/02-validation.md`
+- Spec lifecycle: `sdd/.agent/rules/workflow/00-spec-lifecycle.md`
 - Approval gate: `sdd/.agent/rules/approval/00-approval-gate.md`
 - Skills (post-approval): `sdd/.agent/rules/skills/00-skill-usage.md`
-

@@ -6,6 +6,7 @@
 
 ## Task-Based
 - `core/intake-state.md` (during intake / resume)
+- `core/spec-history.md` (spec versioning / change tracking)
 - `tech/stack.md`
 - `arch/patterns-overview.md`
 - `core/sprint-current.md` (if using sprints)

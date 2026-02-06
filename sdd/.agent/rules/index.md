@@ -3,6 +3,7 @@
 - Intake flow: `rules/intake/00-intake-flow.md`
 - Intake questions: `rules/intake/01-questions.md`
 - Intake validation: `rules/intake/02-validation.md`
+- Spec lifecycle and change workflow: `rules/workflow/00-spec-lifecycle.md`
 - Approval gate: `rules/approval/00-approval-gate.md`
 - Engineering standards: `rules/standards/00-engineering-standards.md`
 - Architecture options: `rules/architecture/00-architecture-options.md`
