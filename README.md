@@ -28,13 +28,16 @@ A spec-driven development (SDD) backbone that keeps project structure stable whi
 ✅ Default path for most projects.
 
 ```mermaid
-flowchart TD
-  A[Pick an agent adapter] --> B[Run init]
-  B --> C[Answer intake questions]
-  C --> D{Validation passes}
-  D -- no --> C
-  D -- yes --> E[Reply approved]
-  E --> F[Generate code under app only]
+flowchart LR
+  Start([Start]) --> Adapter[Choose agent adapter]
+  Adapter --> Init[Run init]
+  Init --> Intake[Answer intake questions]
+  Intake --> Checkpoint[Agent writes specs and updates intake state]
+  Checkpoint --> Validate[Validate specs]
+  Validate --> Approve[Reply approved]
+  Approve --> Skills[Pick skills]
+  Skills --> Code[Generate code under app]
+  Code --> End([Done])
 ```
 
 ### Scenario 2: Validation Fails
@@ -42,12 +45,13 @@ flowchart TD
 🔁 When validation fails, the agent should ask only targeted follow ups until the next validation pass.
 
 ```mermaid
-flowchart TD
-  A[Run validation] --> B{Missing or invalid fields}
-  B -- yes --> C[Agent reports errors and asks targeted follow ups]
-  C --> D[User answers]
-  D --> A
-  B -- no --> E[Proceed to next phase]
+flowchart LR
+  Intake[Answer intake questions] --> Check{Validation passes}
+  Check -->|No| Report[Agent reports missing or invalid fields]
+  Report --> Fix[User provides missing answers]
+  Fix --> Update[Agent updates specs and intake state]
+  Update --> Check
+  Check -->|Yes| Next[Proceed to next phase]
 ```
 
 ### Scenario 3: Spec Change After Approval
@@ -55,16 +59,17 @@ flowchart TD
 🔄 When requirements change, update specs first, then validate, then update code under `app/`.
 
 ```mermaid
-flowchart TD
-  A[Need a change] --> B[Update specs first]
-  B --> C[Record spec history]
-  C --> D[Validate specs]
-  D --> E{Re approval needed}
-  E -- yes --> F[Ask for approval again]
-  F --> G{Approved}
-  G -- no --> B
-  G -- yes --> H[Update code under app]
-  E -- no --> H
+flowchart LR
+  Change[Need a change] --> Specs[Update specs first]
+  Specs --> History[Record spec history]
+  History --> Validate[Validate specs]
+  Validate --> Reapprove{Re approval needed}
+  Reapprove -->|No| Code[Update code under app]
+  Reapprove -->|Yes| Ask[Ask for approval again]
+  Ask --> Approved{Approved}
+  Approved -->|No| Specs
+  Approved -->|Yes| Code
+  Code --> Done([Continue development])
 ```
 
 For the full walkthrough and edge cases, see:
