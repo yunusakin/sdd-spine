@@ -31,7 +31,7 @@ SDD Spine is designed for multi-agent workflows where different tools may genera
 
 ## Supported Agents
 - Any LLM-based agent that can read files, follow intake, and respect the approval gate.
-- The repo includes adapters for Codex, Cursor, and generic tooling.
+- The repo includes adapters for Codex, Cursor, Claude, and generic tooling.
 
 ## Customizing for Your Agent
 Developers can tailor the structure and prompts to a specific agent by updating the adapter files and rules under `sdd/.agent/`. You can add agent-specific instructions, tweak intake flow, or extend skills to match how your team works.
@@ -80,4 +80,5 @@ Developers can tailor the structure and prompts to a specific agent by updating 
 ## Entry Files for Agents
 - `AGENT.md` (generic adapter)
 - `AGENTS.md` (Codex adapter)
+- `CLAUDE.md` (Claude adapter)
 - `.cursorrules` (Cursor adapter)
