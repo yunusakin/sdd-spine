@@ -28,6 +28,7 @@ Run intake in phases to reduce user fatigue:
 3. Phase 3 (Advanced, optional): quality, security, ops, and non-functional targets.
 
 After each phase, checkpoint by updating spec files. This enables resume if intake is interrupted.
+After each phase, run validation per `02-validation.md` before continuing.
 
 ## Question Rules
 - Keep each question batch small (aim for <= 10 questions per turn).
@@ -70,6 +71,7 @@ Additionally, apply API-style follow-ups:
   - current phase
   - phase completion checkboxes
   - missing mandatory fields (if any)
+  - validation errors (if any)
   - last updated date
 - If the user re-runs `init` and spec files already contain partial answers, treat it as a resume:
   1. Ask only missing mandatory fields first.
@@ -83,7 +85,7 @@ After intake (or when resuming), auto-fill the spec files with the collected ans
 Only write sections that have answers.
 
 ## Stop for Approval
-After writing the spec files, stop and ask for explicit approval.
+After writing the spec files, run validation (`02-validation.md`). Only if validation passes: stop and ask for explicit approval.
 
 ## After Approval
 When the user replies "approved":

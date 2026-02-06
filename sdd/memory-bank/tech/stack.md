@@ -12,6 +12,12 @@ Example:
 ## Database
 - PostgreSQL 16
 
+## Deployment
+- Target: Kubernetes
+
+## API
+- Style: REST
+
 ## Frontend
 - React 18
 - TypeScript 5
