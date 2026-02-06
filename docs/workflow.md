@@ -14,7 +14,7 @@ If you change requirements or technical choices after you have replied `approved
 
 1. Update the relevant spec files under `sdd/memory-bank/` first.
 2. Record the change in `sdd/memory-bank/core/spec-history.md`.
-3. Update the spec diff report (recommended): `python3 scripts/spec-diff.py --update` (report: `sdd/memory-bank/core/spec-diff.md`).
+3. Update the spec diff report (recommended): `bash scripts/spec-diff.sh --update` (report: `sdd/memory-bank/core/spec-diff.md`).
 4. Re-run validation rules (`sdd/.agent/rules/intake/02-validation.md`) for impacted mandatory fields.
 5. If the change affects behavior or any mandatory field, the agent should pause and ask for explicit re-approval (`approved`) before continuing.
 

@@ -6,7 +6,7 @@ This repository is a spec-driven backbone, so "tests" here focus on validating i
 Run:
 
 ```bash
-python3 scripts/validate-repo.py
+bash scripts/validate-repo.sh
 ```
 
 This checks:
@@ -38,4 +38,3 @@ Use these as regression scenarios when editing intake rules.
 5. Full-stack
    - Pick `App type: Full-stack`.
    - Expect: follow-ups for both backend and web (or explicit skip) before approval.
-

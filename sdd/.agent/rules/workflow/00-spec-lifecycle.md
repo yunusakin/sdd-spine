@@ -30,8 +30,8 @@ When requirements/constraints/tech choices change after approval:
    - high-level files touched
    - whether re-approval is required
 4. Update the spec diff report (recommended):
-   - if baseline is not initialized yet: run `python3 scripts/spec-diff.py --init`
-   - otherwise: run `python3 scripts/spec-diff.py --update`
+   - if baseline is not initialized yet: run `bash scripts/spec-diff.sh --init`
+   - otherwise: run `bash scripts/spec-diff.sh --update`
 5. Re-run intake validation rules (`sdd/.agent/rules/intake/02-validation.md`) for any impacted mandatory fields.
 6. Decide whether re-approval is required (see below).
 7. If re-approval is required: stop, summarize the changes, and ask the user to reply `approved` to continue implementation.

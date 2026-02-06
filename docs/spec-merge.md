@@ -34,9 +34,8 @@ When conflicts happen in spec files:
 1. Re-read the intent: requirements, constraints, and decisions.
 2. Reconcile semantics manually (do not rely on "ours/theirs").
 3. Update `sdd/memory-bank/core/spec-history.md` if the merged result changes meaning.
-4. Consider updating `sdd/memory-bank/core/spec-diff.md` using `python3 scripts/spec-diff.py --update`.
+4. Consider updating `sdd/memory-bank/core/spec-diff.md` using `bash scripts/spec-diff.sh --update`.
 
 ## Merge Safety Rules
 - Never merge code that violates the approval gate (code before approval).
 - If the merge changes any mandatory field, treat it like a spec change that may require re-approval.
-
