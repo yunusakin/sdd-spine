@@ -1,48 +1,109 @@
 # SDD Spine
 
-SDD Spine is a spec-driven development backbone that keeps project structure stable while working with AI agents or human-driven workflows.
+A spec-driven development (SDD) backbone that keeps project structure stable while working with AI agents or human-driven workflows.
 
-## Getting Started
-1. Pick your agent adapter file:
+- Specs live under [`sdd/memory-bank/`](sdd/memory-bank/)
+- Agent rules live under [`sdd/.agent/`](sdd/.agent/)
+- Application code (after approval) lives under [`app/`](app/)
+
+## Quick Start
+
+1. Pick your agent adapter:
    - Codex: [`AGENTS.md`](AGENTS.md)
    - Claude: [`CLAUDE.md`](CLAUDE.md)
    - Cursor: [`.cursorrules`](.cursorrules)
    - Other tools: [`AGENT.md`](AGENT.md)
-2. Open your agent in the repo root and type `init`.
-3. Answer the intake questions in phases. The agent will:
-   - write specs under [`sdd/memory-bank/`](sdd/memory-bank/)
-   - track progress in [`sdd/memory-bank/core/intake-state.md`](sdd/memory-bank/core/intake-state.md)
-   - validate checkpoints ([`sdd/.agent/rules/intake/02-validation.md`](sdd/.agent/rules/intake/02-validation.md))
-4. Fix any validation errors the agent reports.
-5. Reply `approved`. After approval, all application code must be generated under `app/` only (see [`app/README.md`](app/README.md)).
+2. In the repo root, run: `init`
+3. Complete intake in phases (Core -> Type-specific -> Optional Advanced).
+4. Fix any validation errors (rules: [`sdd/.agent/rules/intake/02-validation.md`](sdd/.agent/rules/intake/02-validation.md)).
+5. When validation passes, reply `approved`.
+6. After approval, all application code must be generated under `app/` only (see [`app/README.md`](app/README.md)).
+
+> Resume: If you stop mid-intake, run `init` again. Progress is tracked in [`sdd/memory-bank/core/intake-state.md`](sdd/memory-bank/core/intake-state.md).
 
 ## Workflow Diagram (Mermaid)
 
 ```mermaid
 flowchart TD
-  A[Open repo root in your agent] --> B[User runs init]
-  B --> C[Phase 1 core intake]
-  C --> D{Validate phase 1}
-  D -- fails --> C
-  D -- passes --> E[Phase 2 type specific and API style]
-  E --> F{Advanced questions}
-  F -- skip --> G{Validate specs}
-  F -- answer --> H[Phase 3 questions]
-  H --> G
-  G -- fails --> E
-  G -- passes --> I[Ask for approval: user replies approved]
-  I --> J{Approved}
-  J -- no --> E
-  J -- yes --> K[Ensure app directory exists]
-  K --> L[Pick skills]
-  L --> M[Generate code under app only]
-  M --> N{Spec change later}
-  N -- yes --> O[Update specs and spec history then validate and reapprove if needed]
-  O --> M
-  N -- no --> P[Continue development and release]
+  S([Open repo]) --> A[Pick an agent adapter]
+  A --> I[Run init]
+
+  subgraph Intake["Intake and validation"]
+    direction TB
+    P1[Phase 1 core intake] --> V1{Validate phase 1}
+    V1 -- fix --> P1
+    V1 -- ok --> P2[Phase 2 type specific]
+    P2 --> API[Phase 2b API style]
+    API --> ADV{Advanced questions}
+    ADV -- skip --> VS{Validate specs}
+    ADV -- answer --> P3[Phase 3 advanced]
+    P3 --> VS
+    VS -- fix --> P2
+    VS -- ok --> AP[Ask for approval]
+    AP --> G{Approved}
+    G -- no --> P2
+  end
+
+  I --> P1
+
+  subgraph After["After approval"]
+    direction TB
+    APP[Ensure app directory exists] --> SK[Pick skills] --> CODE[Generate code under app only]
+    CODE --> CH{Spec change later}
+    CH -- yes --> UP[Update specs and spec history]
+    UP --> VS
+    CH -- no --> E([Continue development])
+  end
+
+  G -- yes --> APP
+
+  %% Styling (GitHub Mermaid compatible)
+  classDef phase fill:#E6F4FF,stroke:#0550AE,color:#0B2F5B
+  classDef decision fill:#FFF4E5,stroke:#B54708,color:#4A2500
+  classDef action fill:#ECFDF3,stroke:#027A48,color:#054F31
+  classDef terminal fill:#F2F4F7,stroke:#667085,color:#101828
+
+  class P1,P2,API,P3 phase
+  class V1,ADV,VS,G,CH decision
+  class S,A,I,AP,APP,SK,CODE,UP action
+  class E terminal
+
+  style Intake fill:#F8FAFC,stroke:#CBD5E1
+  style After fill:#F8FAFC,stroke:#CBD5E1
 ```
 
-Example intake answers (Phase 1):
+## Docs
+
+| Doc | Use it for |
+| --- | --- |
+| [`docs/overview.md`](docs/overview.md) | What this repo is and the core principles |
+| [`docs/quick-start.md`](docs/quick-start.md) | Minimal path: init -> validate -> approved |
+| [`docs/getting-started.md`](docs/getting-started.md) | Full walkthrough + detailed diagram |
+| [`docs/workflow.md`](docs/workflow.md) | Resume, spec changes, re-approval, rollback |
+| [`docs/testing.md`](docs/testing.md) | Repo validation and regression scenarios |
+| [`docs/examples/`](docs/examples/) | Copy-paste scenarios for common app types |
+
+## Repo Layout
+
+```text
+sdd/       agent rules + memory bank specs
+app/       application code (only after approval)
+docs/      documentation
+scripts/   repo validation helpers
+```
+
+## Core Rules
+
+- No application code before explicit approval.
+- Update specs first, then validate, then implement.
+- Keep all application code under `app/` only.
+- If requirements change after approval:
+  - update specs
+  - record the change in [`sdd/memory-bank/core/spec-history.md`](sdd/memory-bank/core/spec-history.md)
+  - follow [`docs/workflow.md`](docs/workflow.md)
+
+## Example Intake (Phase 1)
+
 - Project name: Customer Orders Service
 - Primary purpose/goal: Manage customer orders, payments, and shipment status.
 - App type: Backend API
@@ -52,84 +113,3 @@ Example intake answers (Phase 1):
 - Primary data store + version: PostgreSQL 16
 - Deployment target: Kubernetes
 - API style: REST
-
-If you stop mid-intake, re-run `init` later. The agent should resume using [`sdd/memory-bank/core/intake-state.md`](sdd/memory-bank/core/intake-state.md).
-
-If requirements change after approval, update specs first, record the change in [`sdd/memory-bank/core/spec-history.md`](sdd/memory-bank/core/spec-history.md), and re-approve when required (see [`docs/workflow.md`](docs/workflow.md)).
-
-## Goals
-- Stable, spec-first workflow across projects
-- Clear separation of specs and application code
-- Agent-agnostic intake and approval gates
-
-## Vision
-Ship reliable software by making specs the source of truth and keeping structure consistent across teams and tools.
-
-## Problem It Solves
-Many projects drift because requirements, architecture, and code live in different places and evolve out of sync. This gets worse when multiple AI agents or tools produce changes without a shared spec source of truth. SDD Spine enforces a clear spec-first flow and a stable repo structure so teams can move fast without losing clarity.
-
-## How It Works
-1. Intake captures purpose, constraints, and technical choices for humans and AI agents.
-2. Specs live under `sdd/memory-bank/` and are updated before code.
-3. Approval gates prevent premature coding.
-4. All application code stays under `app/`.
-
-## AI Agents
-SDD Spine is designed for multi-agent workflows where different tools may generate or modify code.
-
-## Agent Expectations
-- Start with `init` and complete intake before coding.
-- Read rules under `sdd/.agent/`.
-- Write specs under `sdd/memory-bank/` before implementation.
-- Generate application code only under `app/`.
-- Stop for approval before producing code.
-
-## Supported Agents
-- Any LLM-based agent that can read files, follow intake, and respect the approval gate.
-- The repo includes adapters for Codex, Cursor, Claude, and generic tooling.
-
-## Customizing for Your Agent
-Developers can tailor the structure and prompts to a specific agent by updating the adapter files and rules under `sdd/.agent/`. You can add agent-specific instructions, tweak intake flow, or extend skills to match how your team works.
-
-## Folder Structure
-- `sdd/` spec rules, memory bank, and process artifacts
-- `app/` application code only (generated after approval)
-- `docs/` project documentation
-- `scripts/` helper scripts
-
-**Note:** This repository includes `app/README.md` as a placeholder and structure guide. Agents must still wait for explicit approval before generating any application code. After approval, all application code lives under `app/` only.
-
-## Use Cases
-- Starting a new project with a spec-first process
-- Standardizing structure across multiple teams and repos
-- Working with different AI agents while keeping outputs consistent
-- Auditing decisions and requirements over time
-
-## Non-Goals
-- Replacing your existing framework or build system
-- Enforcing a specific programming language or tech stack
-- Shipping end-user features directly
-
-## Docs
-- [`docs/getting-started.md`](docs/getting-started.md): Full workflow with Mermaid diagram.
-- [`docs/quick-start.md`](docs/quick-start.md): Concise step-by-step intake + approval flow.
-- [`docs/examples/`](docs/examples/): Copy-pasteable example intake answers and scenarios.
-- [`docs/workflow.md`](docs/workflow.md): Spec change, re-approval, and rollback guidance.
-- [`docs/testing.md`](docs/testing.md): Repo validation and intake regression scenarios.
-
-## Roadmap
-- Add templates for common project types
-- Provide reusable checklists for reviews and releases
-- Expand skills for API design, testing, and security workflows
-- Add example reference implementations under `app/`
-
-## Contributing
-- Open an issue describing the change and motivation.
-- Keep spec updates in `sdd/` aligned with code changes.
-- Prefer small, focused PRs with clear scope.
-
-## Entry Files for Agents
-- [`AGENT.md`](AGENT.md) (generic adapter)
-- [`AGENTS.md`](AGENTS.md) (Codex adapter)
-- [`CLAUDE.md`](CLAUDE.md) (Claude adapter)
-- [`.cursorrules`](.cursorrules) (Cursor adapter)
