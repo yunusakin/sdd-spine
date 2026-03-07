@@ -7,6 +7,7 @@ How to resume intake, execute sprints after approval, apply quality gates, and e
 - Intake progress is tracked in `sdd/memory-bank/core/intake-state.md`.
 - If intake is interrupted, run `init` again.
 - Ask only missing mandatory answers first, then continue phase flow.
+- Use `bash scripts/context-pack.sh --task intake-core` to load only the required files.
 
 ## Intake Decision Loop
 
@@ -25,10 +26,14 @@ If unresolved:
 
 ### Scaffolding
 
-After `approved`, the agent:
+After `approved`, Spectra:
 1. Ensures `app/` exists.
-2. Selects a scaffold from `sdd/.agent/scaffolds/`.
+2. Selects a scaffold from `sdd/system/scaffolds/`.
 3. Generates initial structure under `app/`.
+
+Before coding a task:
+1. Capture intent with `bash scripts/discuss-task.sh --item <id> --task-type <type> --goal "<goal>"`.
+2. Review `sdd/memory-bank/core/implementation-brief.md`.
 
 ### Skill Graph Loop (Before Coding)
 
@@ -55,6 +60,23 @@ Blocking rule:
 - unresolved `critical` or `warning` findings mean item is not stable.
 
 Record findings in `sdd/memory-bank/core/review-gate.md`.
+
+### Verify Work
+
+Before marking an item ready:
+1. Run `bash scripts/verify-work.sh --scope app` for implementation work.
+2. Run `bash scripts/verify-work.sh --scope spec` for spec-only work.
+3. Fix blockers before handoff.
+
+### Quick Lane
+
+For docs/rules/spec/ops work with no `app/*` changes:
+
+```bash
+bash scripts/quick.sh --type docs --task "refresh workflow docs"
+```
+
+If `app/*` changes are detected, quick lane exits non-zero and the full workflow is required.
 
 ## Escalation Rules
 

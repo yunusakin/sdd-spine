@@ -12,11 +12,11 @@ Usage:
 Checks:
 - Approval gate: no non-README app code unless intake-state Approval Status is `approved`
 - Open technical questions block approval and app code changes
-- Open technical questions require an issue reference
+- Open technical questions require an issue reference (URL, #123, owner/repo#123, or JIRA-123)
 - Review gate: unresolved critical/warning findings are blocking
 - Invariant change trail: invariants.md changes require spec-history.md or arch/decisions.md updates
 - Required specs do not contain unresolved placeholders (TBD/TODO/<...>)
-- Progress tracking: if sdd/* or app/* changed in checked range, progress.md must be touched
+- Progress tracking: in consumer repos, if sdd/* or app/* changed in checked range, progress.md must be touched
 - Skill graph: app/* changes require skill-runs update and graph-compliant execution order
 
 Examples:
@@ -61,12 +61,75 @@ cd "${REPO_ROOT}"
 errors=()
 add_error() { errors+=("$1"); }
 
+read_manifest_value() {
+  local key="$1"
+  awk -F= -v key="${key}" '$1 == key { print $2 }' "sdd/system/manifest.env" 2>/dev/null | tail -1
+}
+
 normalize_csv() {
   local raw="$1"
   echo "${raw}" \
     | tr ',' '\n' \
     | sed 's/^ *//;s/ *$//' \
     | awk 'NF > 0'
+}
+
+is_valid_issue_ref() {
+  local issue_ref="$1"
+
+  [[ "${issue_ref}" =~ ^https?:// ]] && return 0
+  [[ "${issue_ref}" =~ ^#[0-9]+$ ]] && return 0
+  [[ "${issue_ref}" =~ ^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+#[0-9]+$ ]] && return 0
+  [[ "${issue_ref}" =~ ^[A-Za-z][A-Za-z0-9]+-[0-9]+$ ]] && return 0
+
+  return 1
+}
+
+parse_project_name() {
+  local brief_file="$1"
+  if [[ ! -f "${brief_file}" ]]; then
+    return 0
+  fi
+
+  awk '
+    BEGIN { in_section = 0; in_comment = 0 }
+    {
+      if ($0 ~ /<!--/) in_comment = 1
+      if (in_comment == 1) {
+        if ($0 ~ /-->/) in_comment = 0
+        next
+      }
+
+      if ($0 ~ /^##[[:space:]]+Project Name[[:space:]]*$/) {
+        in_section = 1
+        next
+      }
+
+      if (in_section == 1 && $0 ~ /^##[[:space:]]+/) {
+        exit
+      }
+
+      if (in_section == 1) {
+        line = $0
+        gsub(/^[[:space:]]+/, "", line)
+        gsub(/[[:space:]]+$/, "", line)
+        if (line == "" || line ~ /^>/) next
+        print line
+        exit
+      }
+    }
+  ' "${brief_file}" 2>/dev/null || true
+}
+
+collect_template_markers() {
+  local file="$1"
+  if [[ ! -f "${file}" ]]; then
+    return 0
+  fi
+
+  grep -En '<[^>]+>|YYYY-MM-DD|<pending\|ok\|fail>|<done\|in-progress\|blocked>' "${file}" \
+    | grep -v '<!--' \
+    | head -5 || true
 }
 
 parse_approval_status() {
@@ -275,11 +338,15 @@ collect_changed_files() {
     return 0
   fi
 
-  if git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
-    git diff --name-only HEAD~1..HEAD 2>/dev/null || true
+  if git rev-parse --verify HEAD >/dev/null 2>&1; then
+    {
+      git diff --name-only HEAD 2>/dev/null || true
+      git ls-files --others --exclude-standard 2>/dev/null || true
+    } | sed '/^$/d' | sort -u
     return 0
   fi
 
+  git ls-files -m -o --exclude-standard 2>/dev/null || true
   return 0
 }
 
@@ -427,12 +494,26 @@ invariants_file="sdd/memory-bank/core/invariants.md"
 spec_history_file="sdd/memory-bank/core/spec-history.md"
 arch_decisions_file="sdd/memory-bank/arch/decisions.md"
 skill_runs_file="sdd/memory-bank/core/skill-runs.md"
-skill_map_file="sdd/.agent/skills/dependency-map.tsv"
+skill_map_file="sdd/system/skills/dependency-map.tsv"
+active_context_file="sdd/memory-bank/core/activeContext.md"
+progress_file="sdd/memory-bank/core/progress.md"
+project_brief_file="sdd/memory-bank/core/projectbrief.md"
 
 approval_status="$(parse_approval_status "${state_file}")"
 open_questions="$(parse_open_technical_questions "${state_file}")"
 blocking_findings="$(parse_blocking_review_findings "${review_gate_file}")"
 changed_files="$(collect_changed_files)"
+project_name_value="$(parse_project_name "${project_brief_file}")"
+repo_mode="$(read_manifest_value "repo_mode")"
+
+if [[ "${repo_mode}" != "canonical" && "${repo_mode}" != "consumer" ]]; then
+  repo_mode="consumer"
+fi
+
+project_initialized=false
+if [[ -n "${project_name_value}" ]]; then
+  project_initialized=true
+fi
 
 app_has_code=false
 if [[ -d "app" ]]; then
@@ -466,7 +547,7 @@ if [[ -n "${open_questions}" ]]; then
 
       if [[ -z "${issue}" || "${issue}" == "-" || "${issue}" == "(none)" ]]; then
         add_error "Open technical question ${qid} is missing issue reference in ${state_file}."
-      elif [[ ! "${issue}" =~ ^https?:// ]] && [[ ! "${issue}" =~ ^#[0-9]+$ ]]; then
+      elif ! is_valid_issue_ref "${issue}"; then
         add_error "Open technical question ${qid} has invalid issue reference '${issue}' in ${state_file}."
       fi
     fi
@@ -526,12 +607,39 @@ for spec in "${required_specs[@]}"; do
   fi
 done
 
+if [[ "${repo_mode}" == "consumer" ]] && { "${project_initialized}" || "${app_has_code}"; }; then
+  context_markers="$(collect_template_markers "${active_context_file}")"
+  if [[ -n "${context_markers}" ]]; then
+    add_error "${active_context_file}: contains unresolved template markers."
+  fi
+
+  progress_markers="$(collect_template_markers "${progress_file}")"
+  if [[ -n "${progress_markers}" ]]; then
+    add_error "${progress_file}: contains unresolved template markers."
+  fi
+fi
+
+active_context_max_bytes=6000
+progress_max_bytes=9000
+
+if [[ -f "${active_context_file}" ]]; then
+  active_context_bytes="$(wc -c < "${active_context_file}" | tr -d ' ')"
+  if [[ "${active_context_bytes}" -gt "${active_context_max_bytes}" ]]; then
+    add_error "${active_context_file}: ${active_context_bytes} bytes exceeds limit ${active_context_max_bytes}; rotate old entries into an archive file."
+  fi
+fi
+
+if [[ -f "${progress_file}" ]]; then
+  progress_bytes="$(wc -c < "${progress_file}" | tr -d ' ')"
+  if [[ "${progress_bytes}" -gt "${progress_max_bytes}" ]]; then
+    add_error "${progress_file}: ${progress_bytes} bytes exceeds limit ${progress_max_bytes}; rotate old entries into an archive file."
+  fi
+fi
+
 ###################################
 # 6. Progress tracking for checked range
 ###################################
-progress_file="sdd/memory-bank/core/progress.md"
-
-if [[ -n "${changed_files}" ]]; then
+if [[ "${repo_mode}" == "consumer" && -n "${changed_files}" ]]; then
   has_spec_or_code_change=false
   while IFS= read -r f; do
     case "${f}" in

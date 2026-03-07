@@ -55,8 +55,8 @@ fi
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "${REPO_ROOT}"
 
-map_file="sdd/.agent/skills/dependency-map.tsv"
-skills_dir="sdd/.agent/skills"
+map_file="sdd/system/skills/dependency-map.tsv"
+skills_dir="sdd/system/skills"
 
 if [[ ! -f "${map_file}" ]]; then
   echo "Error: missing ${map_file}" >&2

@@ -3,15 +3,23 @@
 1. Install Spectra in your project:
 
 ```bash
-# From within the Spectra repo:
-./scripts/init.sh /path/to/your-project
+bash scripts/init.sh /path/to/your-project
 
-# Or download and install directly:
-bash <(curl -sL https://raw.githubusercontent.com/yunusakin/spectra/main/scripts/init.sh)
+# Optional adapters:
+bash scripts/init.sh /path/to/your-project --agents claude,cursor,windsurf,copilot,codex,antigravity
+
+# Optional brownfield discovery:
+bash scripts/init.sh /path/to/your-project --adopt
 ```
 
-2. Open your project in your AI agent.
+2. Resolve bootstrap context:
+
+```bash
+bash scripts/context-pack.sh --task bootstrap
+```
+
 3. Type `init`.
+   This is a chat/runtime message, not a shell command.
 4. Answer Phase 1 (Core) questions.
 5. For technical choices, confirm recommendations before persistence.
 6. Ensure `sdd/memory-bank/core/intake-state.md` has:
@@ -25,7 +33,14 @@ bash scripts/check-policy.sh
 ```
 
 8. When specs are correct and checks pass, reply `approved`.
-9. After `approved`, the agent scaffolds under `app/` and starts sprint execution.
+   This is also a chat/runtime message, not a shell command.
+9. Before implementation work, write an implementation brief:
+
+```bash
+bash scripts/discuss-task.sh --item TASK-001 --task-type bugfix --goal "Describe intended change"
+```
+
+10. After `approved`, Spectra scaffolds under `app/` and starts sprint execution.
 
 ## Open Question Workflow
 

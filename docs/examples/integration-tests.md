@@ -3,8 +3,8 @@
 This is a tool-agnostic reference for how to approach integration tests in projects that use Spectra.
 
 For agent prompt templates, see:
-- `sdd/.agent/prompts/tests/write-integration-tests-with-db.md`
-- `sdd/.agent/prompts/tests/write-contract-tests-for-public-api.md`
+- `sdd/system/prompts/tests/write-integration-tests-with-db.md`
+- `sdd/system/prompts/tests/write-contract-tests-for-public-api.md`
 
 ## Suggested Layout Under `app/`
 

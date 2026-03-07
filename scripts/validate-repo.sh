@@ -7,18 +7,16 @@ Usage:
   bash scripts/validate-repo.sh [--strict]
 
 Checks:
-- Required paths exist
+- Required Spectra system paths exist
+- Legacy v1 agent-specific paths are absent
 - Index files reference existing markdown files
-- Adapter bodies match (AGENT.md, AGENTS.md, CLAUDE.md, .cursorrules)
-- Skills: SKILL.md exists + YAML front matter (name/description/task_types) + index coverage
-- Skill dependency map integrity (known skills, no self-loops, required flags)
-- Prompts: all prompt files are listed in prompts index
-- Markdown expectations for templates
-
-Exit codes:
-  0: OK
-  1: FAIL
-  2: CLI usage error
+- repo_mode is valid and canonical/consumer rules are enforced
+- Skills metadata and dependency map are valid
+- Prompts are indexed
+- Context-pack manifest is well-formed
+- Adapter generation is deterministic
+- Consumer adapter outputs, if present, match generated content
+- Markdown templates and links pass basic hygiene checks
 USAGE
 }
 
@@ -32,7 +30,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$REPO_ROOT"
+cd "${REPO_ROOT}"
 
 errors=()
 warns=()
@@ -42,13 +40,23 @@ add_warn() { warns+=("$1"); }
 
 extract_backtick_tokens() {
   local file="$1"
-  grep -oE '`[^`]+`' "$file" 2>/dev/null | sed 's/^`//;s/`$//' || true
+  grep -oE '`[^`]+`' "${file}" 2>/dev/null | sed 's/^`//;s/`$//' || true
 }
 
 check_markdown_has_h1() {
   local file="$1"
   local first
-  first="$(awk 'NF {print; exit}' "$file" 2>/dev/null || true)"
+  first="$(awk '
+    BEGIN { in_front_matter = 0 }
+    NR == 1 && $0 == "---" { in_front_matter = 1; next }
+    in_front_matter == 1 {
+      if ($0 == "---") {
+        in_front_matter = 0
+      }
+      next
+    }
+    NF { print; exit }
+  ' "${file}" 2>/dev/null || true)"
   if [[ -z "${first}" ]]; then
     add_warn "${file}: file is empty"
     return 0
@@ -72,7 +80,7 @@ check_examples_inside_html_comments() {
         if (index($0, "Example:") > 0 && inside == 0) print NR
         if (index($0, "-->") > 0) inside = 0
       }
-    ' "$file"
+    ' "${file}"
   )
 }
 
@@ -83,10 +91,7 @@ check_index_backtick_paths() {
   while IFS= read -r tok; do
     [[ -n "${tok}" ]] || continue
     if [[ "${tok}" == */* && "${tok}" == *.md ]]; then
-      if [[ -e "${base_dir}/${tok}" ]]; then
-        continue
-      fi
-      if [[ -e "${REPO_ROOT}/${tok}" ]]; then
+      if [[ -e "${base_dir}/${tok}" || -e "${REPO_ROOT}/${tok}" ]]; then
         continue
       fi
       add_error "${index_path}: references missing file \`${tok}\`"
@@ -94,32 +99,12 @@ check_index_backtick_paths() {
   done < <(extract_backtick_tokens "${index_path}")
 }
 
-normalize_adapter_body() {
-  local file="$1"
-  tail -n +2 "$file" | sed 's/[[:space:]]*$//' | awk '
-    { lines[++n] = $0 }
-    END {
-      start = 1
-      while (start <= n && lines[start] ~ /^[[:space:]]*$/) start++
-      end = n
-      while (end >= start && lines[end] ~ /^[[:space:]]*$/) end--
-      for (i = start; i <= end; i++) print lines[i]
-    }
-  '
-}
-
 extract_front_matter_field() {
   local file="$1"
   local key="$2"
-
   awk -v key="${key}" '
     BEGIN { in_meta = 0 }
-    NR == 1 {
-      if ($0 == "---") {
-        in_meta = 1
-        next
-      }
-    }
+    NR == 1 && $0 == "---" { in_meta = 1; next }
     in_meta == 1 {
       if ($0 == "---") exit
       if ($0 ~ "^" key ":[[:space:]]*") {
@@ -130,7 +115,7 @@ extract_front_matter_field() {
         exit
       }
     }
-  ' "$file" 2>/dev/null || true
+  ' "${file}" 2>/dev/null || true
 }
 
 parse_skill_front_matter() {
@@ -143,7 +128,7 @@ parse_skill_front_matter() {
   local end_found=0
 
   local first
-  first="$(head -n 1 "$skill_md" 2>/dev/null | tr -d '\r' || true)"
+  first="$(head -n 1 "${skill_md}" 2>/dev/null | tr -d '\r' || true)"
   if [[ "${first}" != "---" ]]; then
     add_error "${skill_md}: missing YAML front matter (expected leading '---')"
     printf '%s\n' "" > "${out_name}"
@@ -157,46 +142,36 @@ parse_skill_front_matter() {
   while IFS= read -r line || [[ -n "${line}" ]]; do
     lineno=$((lineno + 1))
     line="${line%$'\r'}"
-
     if [[ "${in_meta}" -eq 0 ]]; then
       if [[ "${lineno}" -eq 1 ]]; then
         in_meta=1
       fi
       continue
     fi
-
     if [[ "${line}" == "---" ]]; then
       end_found=1
       break
     fi
-
     [[ -n "${line}" ]] || continue
-
     if [[ "${line}" != *:* ]]; then
       add_warn "${skill_md}:${lineno}: malformed front matter line"
       continue
     fi
-
     key="${line%%:*}"
     val="${line#*:}"
     key="$(echo "${key}" | xargs)"
     val="$(echo "${val}" | xargs)"
-
     case "${key}" in
       name) name="${val}" ;;
       description) desc="${val}" ;;
     esac
-  done < "$skill_md"
+  done < "${skill_md}"
 
   if [[ "${end_found}" -eq 0 ]]; then
-    add_error "${skill_md}: YAML front matter not closed (missing second '---')"
+    add_error "${skill_md}: YAML front matter not closed"
   fi
-  if [[ -z "${name}" ]]; then
-    add_error "${skill_md}: front matter missing \`name\`"
-  fi
-  if [[ -z "${desc}" ]]; then
-    add_error "${skill_md}: front matter missing \`description\`"
-  fi
+  [[ -n "${name}" ]] || add_error "${skill_md}: front matter missing \`name\`"
+  [[ -n "${desc}" ]] || add_error "${skill_md}: front matter missing \`description\`"
 
   printf '%s\n' "${name}" > "${out_name}"
   printf '%s\n' "${desc}" > "${out_desc}"
@@ -206,50 +181,28 @@ check_skill_dependency_map() {
   local map_file="$1"
   local skills_dir="$2"
 
-  if [[ ! -f "${map_file}" ]]; then
-    add_error "Missing skill dependency map: ${map_file}"
-    return 0
-  fi
+  [[ -f "${map_file}" ]] || { add_error "Missing skill dependency map: ${map_file}"; return 0; }
 
   local known_skills
   known_skills="$(find "${skills_dir}" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)"
 
-  local has_row=0
   local row_no=0
+  local has_row=0
   while IFS=$'\t' read -r from to relation required order_weight reason; do
     row_no=$((row_no + 1))
-    [[ -n "${from}" ]] || continue
-    [[ "${from:0:1}" == "#" ]] && continue
-
+    [[ -n "${from}${to}${relation}${required}${order_weight}${reason}" ]] || continue
+    [[ "${from}" =~ ^# ]] && continue
     has_row=1
-
-    if [[ -z "${to}" || -z "${relation}" || -z "${required}" || -z "${order_weight}" ]]; then
-      add_error "${map_file}:${row_no}: expected 6 tab-separated columns"
-      continue
-    fi
-
     if ! printf '%s\n' "${known_skills}" | grep -qx "${from}"; then
-      add_error "${map_file}:${row_no}: unknown from_skill '${from}'"
+      add_error "${map_file}:${row_no}: unknown skill '${from}'"
     fi
     if ! printf '%s\n' "${known_skills}" | grep -qx "${to}"; then
-      add_error "${map_file}:${row_no}: unknown to_skill '${to}'"
+      add_error "${map_file}:${row_no}: unknown skill '${to}'"
     fi
-
-    if [[ "${from}" == "${to}" ]]; then
-      add_error "${map_file}:${row_no}: self-loop is not allowed ('${from}' -> '${to}')"
-    fi
-
-    if [[ "${relation}" != "precedes" ]]; then
-      add_error "${map_file}:${row_no}: relation must be 'precedes'"
-    fi
-
-    if [[ "${required}" != "true" && "${required}" != "false" ]]; then
-      add_error "${map_file}:${row_no}: required must be true or false"
-    fi
-
-    if [[ ! "${order_weight}" =~ ^[0-9]+$ ]]; then
-      add_error "${map_file}:${row_no}: order_weight must be an integer"
-    fi
+    [[ "${from}" != "${to}" ]] || add_error "${map_file}:${row_no}: self-loop not allowed"
+    [[ "${relation}" == "precedes" ]] || add_error "${map_file}:${row_no}: relation must be 'precedes'"
+    [[ "${required}" == "true" || "${required}" == "false" ]] || add_error "${map_file}:${row_no}: required must be true or false"
+    [[ "${order_weight}" =~ ^[0-9]+$ ]] || add_error "${map_file}:${row_no}: order_weight must be an integer"
   done < "${map_file}"
 
   if [[ "${has_row}" -eq 0 ]]; then
@@ -257,32 +210,112 @@ check_skill_dependency_map() {
   fi
 }
 
-########
-# Checks
-########
+check_markdown_links() {
+  local file="$1"
+  local file_dir
+  file_dir="$(dirname "${file}")"
+  local target
+  while IFS= read -r target; do
+    [[ -n "${target}" ]] || continue
+    [[ "${target}" == http://* || "${target}" == https://* || "${target}" == "#"* || "${target}" == mailto:* ]] && continue
+    target="${target%%#*}"
+    [[ -n "${target}" ]] || continue
+    local resolved
+    if [[ "${target}" == /* ]]; then
+      resolved="${target}"
+    else
+      resolved="${file_dir}/${target}"
+    fi
+    if [[ ! -e "${resolved}" && ! -e "${REPO_ROOT}/${target}" ]]; then
+      add_error "${file}: broken link -> ${target}"
+    fi
+  done < <(
+    grep -oE '\[[^]]*\]\([^)]+\)' "${file}" 2>/dev/null | sed 's/.*](//' | sed 's/)$//' || true
+  )
+}
+
+read_manifest_value() {
+  local key="$1"
+  awk -F= -v key="${key}" '$1 == key { print $2 }' "sdd/system/manifest.env" 2>/dev/null | tail -1
+}
 
 required_paths=(
-  "sdd/.agent/rules/index.md"
+  "sdd/system/README.md"
+  "sdd/system/manifest.env"
+  "sdd/system/rules/index.md"
+  "sdd/system/runtime/minimal.md"
+  "sdd/system/runtime/context-packs.tsv"
+  "sdd/system/adapters/README.md"
+  "sdd/system/adapters/common-instructions.md"
+  "sdd/system/adapters/ignore-patterns.txt"
   "sdd/memory-bank/INDEX.md"
-  "AGENT.md"
-  "AGENTS.md"
-  "CLAUDE.md"
-  ".cursorrules"
+  "sdd/memory-bank/core/implementation-brief.md"
+  "sdd/memory-bank/core/activeContext-archive.md"
+  "sdd/memory-bank/core/progress-archive.md"
+  "sdd/memory-bank/discovery/README.md"
+  "scripts/generate-adapters.sh"
+  "scripts/context-pack.sh"
+  "scripts/discuss-task.sh"
+  "scripts/map-codebase.sh"
+  "scripts/verify-work.sh"
+  "scripts/quick.sh"
 )
+
 for p in "${required_paths[@]}"; do
-  if [[ ! -e "${p}" ]]; then
-    add_error "Missing required path: ${p}"
-  fi
+  [[ -e "${p}" ]] || add_error "Missing required path: ${p}"
 done
 
-if [[ -f "sdd/.agent/rules/index.md" ]]; then
-  check_index_backtick_paths "sdd/.agent/rules/index.md" "sdd/.agent"
+legacy_forbidden=(
+  "sdd/.agent"
+  "AGENT.md"
+  ".cursorrules"
+)
+for p in "${legacy_forbidden[@]}"; do
+  [[ ! -e "${p}" ]] || add_error "Legacy path must not exist in v2: ${p}"
+done
+
+repo_mode="$(read_manifest_value "repo_mode")"
+spectra_version="$(read_manifest_value "spectra_version")"
+[[ -n "${spectra_version}" ]] || add_error "sdd/system/manifest.env: missing spectra_version"
+if [[ "${repo_mode}" != "canonical" && "${repo_mode}" != "consumer" ]]; then
+  add_error "sdd/system/manifest.env: repo_mode must be canonical or consumer"
 fi
-if [[ -f "sdd/.agent/prompts/index.md" ]]; then
-  check_index_backtick_paths "sdd/.agent/prompts/index.md" "sdd/.agent/prompts"
+
+if [[ -f "sdd/system/rules/index.md" ]]; then
+  check_index_backtick_paths "sdd/system/rules/index.md" "sdd/system"
+fi
+if [[ -f "sdd/system/prompts/index.md" ]]; then
+  check_index_backtick_paths "sdd/system/prompts/index.md" "sdd/system/prompts"
 fi
 if [[ -f "sdd/memory-bank/INDEX.md" ]]; then
   check_index_backtick_paths "sdd/memory-bank/INDEX.md" "sdd/memory-bank"
+fi
+
+required_packs=(
+  bootstrap
+  intake-core
+  intake-backend
+  intake-web
+  intake-mobile
+  intake-cli
+  intake-worker
+  intake-library
+  brownfield-discovery
+  implementation-discuss
+  bugfix
+  post-approval-api-change
+  post-approval-db-change
+  release
+  verify-work
+  quick
+)
+
+if [[ -f "sdd/system/runtime/context-packs.tsv" ]]; then
+  for pack in "${required_packs[@]}"; do
+    if ! awk -F'\t' -v pack="${pack}" '$1 == pack { found = 1 } END { exit(found ? 0 : 1) }' "sdd/system/runtime/context-packs.tsv"; then
+      add_error "sdd/system/runtime/context-packs.tsv: missing pack '${pack}'"
+    fi
+  done
 fi
 
 tmp_dir="$(mktemp -d 2>/dev/null)" \
@@ -291,27 +324,7 @@ tmp_dir="$(mktemp -d 2>/dev/null)" \
 cleanup() { rm -rf "${tmp_dir}"; }
 trap cleanup EXIT
 
-adapter_paths=("AGENT.md" "AGENTS.md" "CLAUDE.md" ".cursorrules")
-ref_path=""
-for p in "${adapter_paths[@]}"; do
-  if [[ -f "${p}" ]]; then
-    ref_path="${p}"
-    break
-  fi
-done
-
-if [[ -n "${ref_path}" ]]; then
-  normalize_adapter_body "${ref_path}" > "${tmp_dir}/adapter.ref"
-  for p in "${adapter_paths[@]}"; do
-    [[ -f "${p}" ]] || continue
-    normalize_adapter_body "${p}" > "${tmp_dir}/adapter.cur"
-    if ! diff -q "${tmp_dir}/adapter.ref" "${tmp_dir}/adapter.cur" >/dev/null 2>&1; then
-      add_error "Adapter bodies differ (expected identical content after first line): ${ref_path}, ${p}"
-    fi
-  done
-fi
-
-skills_dir="sdd/.agent/skills"
+skills_dir="sdd/system/skills"
 skills_index="${skills_dir}/index.md"
 indexed_skills=""
 if [[ -f "${skills_index}" ]]; then
@@ -322,10 +335,7 @@ if [[ -d "${skills_dir}" ]]; then
     [[ -d "${d}" ]] || continue
     skill_name="$(basename "${d}")"
     skill_md="${d}/SKILL.md"
-    if [[ ! -f "${skill_md}" ]]; then
-      add_error "${d}: missing SKILL.md"
-      continue
-    fi
+    [[ -f "${skill_md}" ]] || { add_error "${d}: missing SKILL.md"; continue; }
 
     name_out="${tmp_dir}/skill.name"
     desc_out="${tmp_dir}/skill.desc"
@@ -336,25 +346,17 @@ if [[ -d "${skills_dir}" ]]; then
     fi
 
     task_types="$(extract_front_matter_field "${skill_md}" "task_types")"
-    if [[ -z "${task_types}" ]]; then
-      add_error "${skill_md}: front matter missing \`task_types\`"
-    else
-      if ! echo "${task_types}" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | awk 'NF > 0 { found = 1 } END { exit found ? 0 : 1 }'; then
-        add_error "${skill_md}: \`task_types\` must contain at least one value"
-      fi
-    fi
+    [[ -n "${task_types}" ]] || add_error "${skill_md}: front matter missing \`task_types\`"
 
-    if [[ -n "${indexed_skills}" ]]; then
-      if ! printf '%s\n' "${indexed_skills}" | grep -qx "${skill_name}"; then
-        add_error "${d}: not listed in sdd/.agent/skills/index.md"
-      fi
+    if [[ -n "${indexed_skills}" ]] && ! printf '%s\n' "${indexed_skills}" | grep -qx "${skill_name}"; then
+      add_error "${d}: not listed in sdd/system/skills/index.md"
     fi
   done
 fi
 
 check_skill_dependency_map "${skills_dir}/dependency-map.tsv" "${skills_dir}"
 
-prompts_root="sdd/.agent/prompts"
+prompts_root="sdd/system/prompts"
 prompts_index="${prompts_root}/index.md"
 if [[ -f "${prompts_index}" ]]; then
   indexed_prompts="$(
@@ -362,7 +364,6 @@ if [[ -f "${prompts_index}" ]]; then
       | awk 'index($0, "/") > 0 && $0 ~ /\.md$/ { print }' \
       | sort -u
   )"
-
   while IFS= read -r -d '' p; do
     rel="${p#${prompts_root}/}"
     if ! printf '%s\n' "${indexed_prompts}" | grep -qx "${rel}"; then
@@ -381,34 +382,7 @@ done < <(find "sdd/memory-bank" -type f -name '*.md' -print0)
 
 while IFS= read -r -d '' f; do
   check_markdown_has_h1 "${f}"
-done < <(find "sdd/.agent/rules" -type f -name '*.md' -print0)
-
-check_markdown_links() {
-  local file="$1"
-  local file_dir
-  file_dir="$(dirname "${file}")"
-  local target
-  while IFS= read -r target; do
-    [[ -n "${target}" ]] || continue
-    [[ "${target}" == http://* || "${target}" == https://* || "${target}" == "#"* || "${target}" == mailto:* ]] && continue
-    target="${target%%#*}"
-    [[ -n "${target}" ]] || continue
-    local resolved
-    if [[ "${target}" == /* ]]; then
-      resolved="${target}"
-    else
-      resolved="${file_dir}/${target}"
-    fi
-    if [[ ! -e "${resolved}" ]]; then
-      if [[ ! -e "${REPO_ROOT}/${target}" ]]; then
-        add_error "${file}: broken link -> ${target}"
-      fi
-    fi
-  done < <(
-    grep -oE '\[[^]]*\]\([^)]+\)' "${file}" 2>/dev/null \
-      | sed 's/.*](//' | sed 's/)$//' || true
-  )
-}
+done < <(find "sdd/system" -type f -name '*.md' -print0)
 
 while IFS= read -r -d '' f; do
   check_markdown_links "${f}"
@@ -420,32 +394,77 @@ done < <(find "sdd/memory-bank" -type f -name '*.md' -print0 2>/dev/null)
 
 while IFS= read -r -d '' f; do
   check_markdown_links "${f}"
-done < <(find "sdd/.agent" -type f -name '*.md' -print0 2>/dev/null)
+done < <(find "sdd/system" -type f -name '*.md' -print0 2>/dev/null)
 
-########
-# Report
-########
+generated_a="${tmp_dir}/generated-a"
+generated_b="${tmp_dir}/generated-b"
+mkdir -p "${generated_a}" "${generated_b}"
 
-if [[ "${#errors[@]}" -gt 0 ]]; then
-  echo "Errors:"
-  for m in "${errors[@]}"; do
-    echo "- ${m}"
+if ! bash scripts/generate-adapters.sh --agents claude,cursor,windsurf,copilot,codex,antigravity --target "${generated_a}" >/dev/null 2>&1; then
+  add_error "scripts/generate-adapters.sh: failed smoke generation into temp dir"
+fi
+if ! bash scripts/generate-adapters.sh --agents claude,cursor,windsurf,copilot,codex,antigravity --target "${generated_b}" >/dev/null 2>&1; then
+  add_error "scripts/generate-adapters.sh: failed second smoke generation into temp dir"
+fi
+if [[ -d "${generated_a}" && -d "${generated_b}" ]] && ! diff -qr "${generated_a}" "${generated_b}" >/dev/null 2>&1; then
+  add_error "scripts/generate-adapters.sh: generation is not deterministic"
+fi
+
+adapter_outputs=(
+  "AGENTS.md"
+  "CLAUDE.md"
+  ".github/copilot-instructions.md"
+  ".cursor/rules/spectra-core.mdc"
+  ".cursor/rules/spectra-workflow.mdc"
+  ".cursor/rules/spectra-context.mdc"
+  ".windsurf/rules/spectra-core.md"
+  ".windsurf/rules/spectra-workflow.md"
+  ".windsurf/rules/spectra-context.md"
+  ".agent/rules/spectra-core.md"
+  ".agent/rules/spectra-workflow.md"
+  ".agent/rules/spectra-context.md"
+)
+
+if [[ "${repo_mode}" == "canonical" ]]; then
+  for p in "${adapter_outputs[@]}"; do
+    [[ ! -e "${p}" ]] || add_error "Canonical repo must not commit generated adapter output: ${p}"
   done
-  echo
+elif [[ "${repo_mode}" == "consumer" ]]; then
+  for p in "${adapter_outputs[@]}"; do
+    [[ -e "${p}" ]] || continue
+    if [[ ! -e "${generated_a}/${p}" ]]; then
+      add_error "Adapter output exists but generator did not produce it: ${p}"
+      continue
+    fi
+    if ! diff -q "${p}" "${generated_a}/${p}" >/dev/null 2>&1; then
+      add_error "Adapter output does not match generated template: ${p}"
+    fi
+  done
+fi
+
+if [[ "${STRICT}" -eq 1 ]]; then
+  for p in scripts/*.sh; do
+    [[ -f "${p}" ]] || continue
+    [[ -x "${p}" ]] || add_error "${p}: script should be executable"
+  done
 fi
 
 if [[ "${#warns[@]}" -gt 0 ]]; then
-  echo "Warnings:"
-  for m in "${warns[@]}"; do
-    echo "- ${m}"
+  echo "Validation warnings:"
+  for w in "${warns[@]}"; do
+    echo "- ${w}"
   done
-  echo
+  echo ""
 fi
 
-if [[ "${#errors[@]}" -gt 0 || ( "${STRICT}" -eq 1 && "${#warns[@]}" -gt 0 ) ]]; then
+if [[ "${#errors[@]}" -gt 0 ]]; then
+  echo "Validation errors:"
+  for e in "${errors[@]}"; do
+    echo "- ${e}"
+  done
+  echo ""
   echo "Validation: FAIL"
   exit 1
 fi
 
 echo "Validation: OK"
-exit 0

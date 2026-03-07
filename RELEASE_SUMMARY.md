@@ -1,19 +1,22 @@
 # Release Summary
 
-## v1.0.2
+## v2.0.0
 
-### Feature: Token-Efficient Intake Context
-- Split the large intake question corpus into phase/app-type packs under `sdd/.agent/rules/intake/questions/`.
-- Converted `sdd/.agent/rules/intake/01-questions.md` into a router instead of a full question payload.
-- Added `sdd/.agent/runtime/minimal.md` to enforce minimal context loading by workflow mode.
-- Updated intake flow and adapter contracts to load only required packs per phase.
+### Feature: Agent-Independent Canonical Runtime
+- Moved the canonical Spectra runtime from `sdd/.agent/` to `sdd/system/`.
+- Added `sdd/system/manifest.env` and `sdd/system/runtime/context-packs.tsv`.
+- Removed committed root adapter artifacts from the Spectra source repository.
 
-### Feature: Skill Graph Enforcement
-- Added canonical dependency map `sdd/.agent/skills/dependency-map.tsv`.
-- Added `scripts/resolve-skills.sh` for task-type skill ordering and validation.
-- Added `sdd/memory-bank/core/skill-runs.md` for skill execution traceability.
-- Enforced hard-fail policy checks for dependency order and required edges on `app/*` ranges.
+### Feature: Consumer Adapter Generation
+- Added `scripts/generate-adapters.sh` for `Claude Code`, `Cursor`, `Windsurf`, `GitHub Copilot`, `Codex`, and `Antigravity`.
+- Kept the canonical source adapter-neutral while allowing generated instruction files in consumer repositories.
+
+### Feature: Workflow Expansion
+- Added brownfield discovery with `scripts/map-codebase.sh`.
+- Added pre-execution discussion with `scripts/discuss-task.sh`.
+- Added handoff verification with `scripts/verify-work.sh`.
+- Added lightweight non-app execution with `scripts/quick.sh`.
 
 ### Operational Outcome
-- Reduced intake context payload size by replacing one large question file with selective pack loading.
-- Kept strict policy and validation guardrails active while lowering token overhead.
+- Established a breaking-change v2 foundation where rules, manifests, and state are tool-agnostic.
+- Preserved installability and CI validation while moving all agent-specific behavior to generated artifacts.

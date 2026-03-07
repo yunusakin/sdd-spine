@@ -16,7 +16,7 @@ Best when:
 
 Checklist:
 - specs updated under `sdd/memory-bank/`
-- validation passes (rules: `sdd/.agent/rules/intake/02-validation.md`)
+- validation passes (rules: `sdd/system/rules/intake/02-validation.md`)
 - code changes under `app/` only (after approval)
 
 ### Pattern B: Two PRs (Specs First, Code Second)

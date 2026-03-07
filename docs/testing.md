@@ -10,7 +10,7 @@ Run strict validation:
 bash scripts/validate-repo.sh --strict
 ```
 
-Run policy checks (local default range):
+Run policy checks (local working-tree mode):
 
 ```bash
 bash scripts/check-policy.sh
@@ -28,14 +28,24 @@ Resolve skill order for a task type:
 bash scripts/resolve-skills.sh --task-type api-change
 ```
 
+Run adapter generation smoke check:
+
+```bash
+bash scripts/generate-adapters.sh --agents claude,cursor,windsurf,copilot,codex,antigravity --target /tmp/spectra-adapters
+```
+
 ## What `validate-repo.sh` Verifies
 
 - Required paths and index references.
 - Markdown link integrity across docs/rules/memory-bank.
-- Adapter consistency (`AGENT.md`, `AGENTS.md`, `CLAUDE.md`, `.cursorrules`).
+- Legacy v1 agent-specific paths are absent.
+- `repo_mode` is valid and canonical/consumer constraints are enforced.
+- Adapter generation is deterministic.
+- Consumer adapter outputs, if present, match generated output.
 - Skills front matter + index coverage.
 - Skill dependency map integrity (`dependency-map.tsv`).
 - Prompt index coverage.
+- Context-pack manifest integrity.
 - Markdown template expectations.
 
 ## What `check-policy.sh` Verifies
@@ -47,7 +57,7 @@ bash scripts/resolve-skills.sh --task-type api-change
 - Review-gate unresolved `critical`/`warning` findings are blocking.
 - Invariant changes require decision trail updates.
 - No unresolved placeholders in required specs.
-- Progress tracking for `sdd/*` or `app/*` changes in checked range.
+- Progress tracking for `sdd/*` or `app/*` changes in checked range for consumer repositories.
 - Skill graph hard-fail for `app/*` changes:
   - `skill-runs.md` update required
   - required dependencies must exist
@@ -63,42 +73,54 @@ bash scripts/resolve-skills.sh --task-type api-change
 - `bash scripts/check-policy.sh`
 - Expect `Policy check: OK` on unchanged repo.
 
-3. Skill resolver baseline
+3. Adapter generation baseline
+- `bash scripts/generate-adapters.sh --agents claude,cursor,windsurf,copilot,codex,antigravity --target /tmp/spectra-adapters`
+- Expect `Adapter generation: OK`.
+
+4. Skill resolver baseline
 - `bash scripts/resolve-skills.sh --task-type api-change`
 - Expect ordered skills + `Skill resolution: OK`.
 
-4. Required dependency fail
+5. Required dependency fail
 - `bash scripts/resolve-skills.sh --task-type api-change --skills testing-plan,api-design`
 - Expect non-zero (required order/dependency violation).
 
-5. Open technical question blocks approval
+6. Open technical question blocks approval
 - `Approval Status: approved` + one `open` question.
 - Expect policy fail.
 
-6. Missing issue reference for open question
+7. Missing issue reference for open question
 - `open` question row without issue link.
 - Expect policy fail.
 
-7. Review-gate severity blocking
+8. Review-gate severity blocking
 - unresolved `warning` -> fail.
 - unresolved `critical` -> fail.
 
-8. App change without skill-run update
+9. App change without skill-run update
 - range contains non-README `app/` file change but not `skill-runs.md`.
 - Expect policy fail.
 
-9. Skill-run order mismatch
+10. Skill-run order mismatch
 - `skill-runs.md` row has graph-inverted order (e.g., `testing-plan,api-design`).
 - Expect policy fail.
 
-10. Invariant change trail
+11. Invariant change trail
 - range includes `core/invariants.md` change without `spec-history.md` or `arch/decisions.md`.
 - Expect policy fail.
 
-11. Range-aware mode
+12. Quick lane rejects app changes
+- `bash scripts/quick.sh --type docs --task "refresh docs"` with `app/*` changes present.
+- Expect quick lane fail.
+
+13. Verify-work blocked state
+- Leave unresolved `warning` in `review-gate.md`.
+- Expect `bash scripts/verify-work.sh --scope app` to fail.
+
+14. Range-aware mode
 - `bash scripts/check-policy.sh --base <base> --head <head>`
 - Expect same rules enforced over full range.
 
-12. Docs-only range
+15. Docs-only range
 - docs-only changes in range.
 - Expect no false-positive policy failures.

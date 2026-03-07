@@ -1,38 +1,51 @@
 # Getting Started
 
-This guide explains Spectra end-to-end: intake, validation, approval, scaffolding, sprint execution, and post-code verification.
+This guide explains Spectra end-to-end: installation, intake, validation, approval, scaffolding, sprint execution, and post-code verification.
+
+Work in two places:
+
+- this repo when you are changing the Spectra framework itself
+- your target repo after `bash scripts/init.sh /path/to/your-project`
 
 ## End-to-End Checklist
 
-1. Install Spectra: `./scripts/init.sh /path/to/your-project` (or via curl — see `docs/quick-start.md`).
-2. Answer Phase 1 (Core) questions. Say **"recommend"** if unsure about any technical choice.
-3. Agent updates specs and `sdd/memory-bank/core/intake-state.md`.
-4. Agent validates and asks targeted follow-ups if needed.
-5. Continue Phase 2 / 2b; optionally skip Phase 3.
-6. Run strict repository validation:
+1. Install Spectra core: `bash scripts/init.sh /path/to/your-project`.
+2. Optionally add adapters: `bash scripts/init.sh /path/to/your-project --agents claude,cursor,windsurf,copilot,codex,antigravity`.
+3. For brownfield repos, run `bash scripts/init.sh /path/to/your-project --adopt`.
+4. Resolve baseline context with `bash scripts/context-pack.sh --task bootstrap`.
+5. Answer Phase 1 (Core) questions. Say **"recommend"** if unsure about any technical choice.
+6. Spectra updates specs and `sdd/memory-bank/core/intake-state.md`.
+7. Spectra validates and asks targeted follow-ups if needed.
+8. Continue Phase 2 / 2b; optionally skip Phase 3.
+9. Before implementation work, capture intent with `bash scripts/discuss-task.sh --item <id> --task-type <type> --goal "<goal>"`.
+10. Run strict repository validation:
 
 ```bash
 bash scripts/validate-repo.sh --strict
+bash scripts/check-policy.sh
 ```
 
-7. Reply `approved`.
-8. Agent scaffolds project under `app/`.
-9. Agent executes sprint loop (plan -> skill checks -> code -> test -> verify).
-10. Use `bash scripts/health-check.sh` to monitor overall status.
+11. Reply `approved` in your AI chat/runtime.
+12. Spectra scaffolds project under `app/`.
+13. Spectra executes sprint loop (plan -> skill checks -> code -> test -> verify).
+14. Use `bash scripts/health-check.sh` to monitor overall status.
 
 ## Core Files To Know
 
-- Intake flow: `sdd/.agent/rules/intake/00-intake-flow.md`
-- Intake questions: `sdd/.agent/rules/intake/01-questions.md`
-- Intake validation: `sdd/.agent/rules/intake/02-validation.md`
-- Discovery mode: `sdd/.agent/rules/intake/03-discovery.md`
-- Approval gate: `sdd/.agent/rules/approval/00-approval-gate.md`
-- Sprint execution: `sdd/.agent/rules/workflow/01-sprint-execution.md`
-- Post-code verification: `sdd/.agent/rules/workflow/02-post-code-verification.md`
+- Intake flow: `sdd/system/rules/intake/00-intake-flow.md`
+- Intake questions: `sdd/system/rules/intake/01-questions.md`
+- Intake validation: `sdd/system/rules/intake/02-validation.md`
+- Discovery mode: `sdd/system/rules/intake/03-discovery.md`
+- Approval gate: `sdd/system/rules/approval/00-approval-gate.md`
+- Sprint execution: `sdd/system/rules/workflow/01-sprint-execution.md`
+- Post-code verification: `sdd/system/rules/workflow/02-post-code-verification.md`
+- Context packs: `sdd/system/runtime/context-packs.tsv`
 - Resume state: `sdd/memory-bank/core/intake-state.md`
 - Active context: `sdd/memory-bank/core/activeContext.md`
 - Progress tracking: `sdd/memory-bank/core/progress.md`
 - Traceability: `sdd/memory-bank/core/traceability.md`
+- Discovery notes: `sdd/memory-bank/discovery/`
+- Implementation brief: `sdd/memory-bank/core/implementation-brief.md`
 
 ## Example Intake Scenarios
 
@@ -44,6 +57,7 @@ bash scripts/validate-repo.sh --strict
 
 ## Common Mistakes
 
+- Running `init` or `approved` as shell commands instead of chat/runtime messages.
 - Generating code before `approved`.
 - Skipping validation before approval.
 - Changing mandatory choices after approval without re-approval.
@@ -55,7 +69,7 @@ Validation loops:
 - Fix only reported errors, then re-run validation.
 
 Interrupted intake:
-- Run `init` again; agent resumes from `intake-state.md`.
+- Run `init` again; Spectra resumes from `intake-state.md`.
 
 Spec changes after approval:
 - Update specs first, then validate, then re-approve if behavior changed.

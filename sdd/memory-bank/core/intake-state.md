@@ -69,5 +69,8 @@ not approved
 
 ## Last Updated
 
+## Discovered Signals
+- (none)
+
 ## Notes
 - (none)

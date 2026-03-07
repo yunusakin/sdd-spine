@@ -5,22 +5,52 @@
 ### Planned
 - (none)
 
+## [v2.0.0] - 2026-03-07
+
+### Added
+- Agent-independent canonical runtime under `sdd/system/`.
+- New commands:
+  - `scripts/generate-adapters.sh`
+  - `scripts/map-codebase.sh`
+  - `scripts/context-pack.sh`
+  - `scripts/discuss-task.sh`
+  - `scripts/verify-work.sh`
+  - `scripts/quick.sh`
+- New canonical manifests and memory-bank assets:
+  - `sdd/system/manifest.env`
+  - `sdd/system/runtime/context-packs.tsv`
+  - `sdd/system/adapters/`
+  - `sdd/memory-bank/core/implementation-brief.md`
+  - `sdd/memory-bank/core/activeContext-archive.md`
+  - `sdd/memory-bank/discovery/`
+
+### Changed
+- Migrated canonical runtime content from `sdd/.agent/` to `sdd/system/`.
+- Refactored `scripts/init.sh` to support core-only install, `--adopt`, and `--agents`.
+- Refactored `scripts/validate-repo.sh` to validate canonical/consumer repo modes and smoke-test adapter generation.
+- Updated docs and CI to the v2 agent-independent model.
+
+### Removed
+- Legacy canonical path `sdd/.agent/`.
+- Committed root adapter files from the Spectra source repo.
+- Legacy root files `AGENT.md` and `.cursorrules`.
+
 ## [v1.0.2] - 2026-02-22
 
 ### Added
 - Feature: Token-Efficient Intake Context
-  - Split intake questions into phase/app-type packs under `sdd/.agent/rules/intake/questions/`.
-  - Added runtime minimal loading manifest: `sdd/.agent/runtime/minimal.md`.
+  - Split intake questions into phase/app-type packs under `sdd/system/rules/intake/questions/`.
+  - Added runtime minimal loading manifest: `sdd/system/runtime/minimal.md`.
 - Feature: Skill Graph Enforcement
-  - Added canonical skill dependency map: `sdd/.agent/skills/dependency-map.tsv`.
+  - Added canonical skill dependency map: `sdd/system/skills/dependency-map.tsv`.
   - Added skill run ledger: `sdd/memory-bank/core/skill-runs.md`.
   - Added resolver CLI: `scripts/resolve-skills.sh`.
 
 ### Changed
-- Converted `sdd/.agent/rules/intake/01-questions.md` into a lightweight router.
-- Updated `sdd/.agent/rules/intake/00-intake-flow.md` to load only relevant question packs.
-- Updated adapter read-first contract to include `sdd/.agent/runtime/minimal.md`.
-- Updated `sdd/.agent/rules/index.md` and `sdd/.agent/README.md` for runtime + pack discovery.
+- Converted `sdd/system/rules/intake/01-questions.md` into a lightweight router.
+- Updated `sdd/system/rules/intake/00-intake-flow.md` to load only relevant question packs.
+- Updated adapter read-first contract to include `sdd/system/runtime/minimal.md`.
+- Updated `sdd/system/rules/index.md` and `sdd/system/README.md` for runtime + pack discovery.
 
 ### Enforced
 - Skill graph hard-fail checks in `scripts/check-policy.sh` for `app/*` ranges:
@@ -38,10 +68,10 @@
   - `sdd/memory-bank/core/invariants.md`
   - `sdd/memory-bank/core/review-gate.md`
 - New governance rules:
-  - `sdd/.agent/rules/intake/04-question-contract.md`
-  - `sdd/.agent/rules/intake/05-question-catalog.md`
-  - `sdd/.agent/rules/workflow/03-role-loop-gate.md`
-  - `sdd/.agent/rules/workflow/04-escalation-policy.md`
+  - `sdd/system/rules/intake/04-question-contract.md`
+  - `sdd/system/rules/intake/05-question-catalog.md`
+  - `sdd/system/rules/workflow/03-role-loop-gate.md`
+  - `sdd/system/rules/workflow/04-escalation-policy.md`
 - GitHub issue template for unresolved technical intake decisions:
   - `.github/ISSUE_TEMPLATE/intake-question.yml`
 
