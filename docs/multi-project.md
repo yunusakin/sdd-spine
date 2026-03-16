@@ -33,7 +33,8 @@ shared/
 ```
 
 Guidelines:
-- Do not share `sdd/governance/` or `sdd/memory-bank/` between projects. Each project should own its own spec and approval state.
+- Do not share `sdd/governance/` between projects. Each project should own its own spec and approval state.
+- If you keep supporting notes under `sdd/memory-bank/`, keep them project-local too.
 - Shared code should live outside `app/` (for example under `shared/`) and be referenced by the project builds as needed.
 
 See also: `docs/monorepo-conventions.md`.

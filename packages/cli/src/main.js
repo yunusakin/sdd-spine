@@ -5,6 +5,7 @@ import { contextPackCommand } from "./commands/context-pack.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { discussTaskCommand } from "./commands/discuss-task.js";
 import { evalRunCommand } from "./commands/eval-run.js";
+import { featureInitCommand } from "./commands/feature-init.js";
 import { initCommand } from "./commands/init.js";
 import { quickCommand } from "./commands/quick.js";
 import { specDiffCommand } from "./commands/spec-diff.js";
@@ -23,6 +24,7 @@ function printHelp() {
   title("Setup:");
   title("  init [path]                Bootstrap a new Spectra project");
   title("  adopt [path]               Add Spectra to an existing repo");
+  title("  feature init <id>          Create a new executable feature bundle");
   title("");
   title("Workflow:");
   title("  context                    Print a role/goal-aware context pack");
@@ -105,6 +107,13 @@ function dispatch(argv) {
       return initCommand([subcommand, ...rest].filter(Boolean));
     case "adopt":
       return adoptCommand([subcommand, ...rest].filter(Boolean));
+    case "feature":
+      if (subcommand === "init") {
+        return featureInitCommand(rest);
+      }
+      throw new Error(
+        "Usage: spectra feature init <feature-id> [--name <display-name>] [--owner <owner>] [--type <assistant|api|service|web|worker|cli>]"
+      );
     case "validate":
       return validateCommand([subcommand, ...rest].filter(Boolean));
     case "approve":

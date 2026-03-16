@@ -1,126 +1,96 @@
-# Testing and Quality Checks
+# Validate, Eval, and Verify
 
-Spectra tests focus on process integrity (rules, indexes, links, policy invariants) plus workflow behavior.
+Spectra v2 uses three different quality layers. Keep them separate.
 
-## Automated Checks
+## `spectra validate`
 
-Run strict validation:
+Purpose:
+
+- check structure
+- check policy
+- check approval-state consistency
+- check executable spec completeness
+
+Run it:
 
 ```bash
 spectra validate
-```
-
-Run policy checks (local working-tree mode):
-
-```bash
-spectra validate
-```
-
-Run policy checks for an explicit range:
-
-```bash
 spectra validate --base <base_sha> --head <head_sha>
 ```
 
-Resolve skill order for a task type:
+Use it:
+
+- after creating or changing specs
+- before approvals
+- before verify
+
+## `spectra eval`
+
+Purpose:
+
+- check feature behavior contracts
+- run release-threshold logic
+- catch regression against the feature’s eval definitions
+
+Run it:
 
 ```bash
-spectra skills --task-type api-change
+spectra eval demo-intake --suite smoke
+spectra eval demo-intake --suite release
 ```
 
-Run adapter generation smoke check:
+Use it:
+
+- after implementation work
+- before release verification
+
+## `spectra verify`
+
+Purpose:
+
+- produce release confidence, not just pass/fail test status
+- aggregate validation, policy, legacy verify inputs, eval readiness, telemetry coverage, and release readiness
+
+Run it:
 
 ```bash
-spectra adapters --agents claude,cursor,windsurf,copilot,codex,antigravity --target /tmp/spectra-adapters
+spectra verify --profile standard
+spectra verify --profile release
 ```
 
-## What `validate-repo.sh` Verifies
+Use it:
 
-- Required paths and index references.
-- Markdown link integrity across docs/rules/memory-bank.
-- Legacy v1 agent-specific paths are absent.
-- `repo_mode` is valid and canonical/consumer constraints are enforced.
-- Adapter generation is deterministic.
-- Consumer adapter outputs, if present, match generated output.
-- Skills front matter + index coverage.
-- Skill dependency map integrity (`dependency-map.tsv`).
-- Prompt index coverage.
-- Context-pack manifest integrity.
-- Markdown template expectations.
+- before handoff
+- before release approval
 
-## What `check-policy.sh` Verifies
+## Recommended Sequence
 
-- Approval-gate invariant for application code under `app/`.
-- Canonical staged approval signal in `sdd/governance/approval-state.yaml`.
-- Open technical questions block approval and code progression.
-- Open technical questions require issue references.
-- Review-gate unresolved `critical`/`warning` findings are blocking.
-- Invariant changes require decision trail updates.
-- No unresolved placeholders in required specs.
-- Progress tracking for `sdd/*` or `app/*` changes in checked range for consumer repositories.
-- Skill graph hard-fail for `app/*` changes:
-  - `skill-runs.md` update required
-  - required dependencies must exist
-  - execution order must follow graph
+```bash
+spectra validate
+spectra eval <feature-id> --suite smoke
+spectra verify --profile release
+```
 
-## Policy Script Test Scenarios
+## What Should Block Work
 
-1. Baseline strict validation
+Blocking:
+
+- validation errors
+- policy failures
+- missing staged approvals
+- verify blocked verdict
+- failing release eval thresholds
+
+Warning-only:
+
+- optional docs gaps
+- non-blocking context-pack budget warnings
+- incomplete narrative Markdown when YAML contracts are valid
+
+## Contributor Note
+
+The runtime still uses internal deterministic scripts under the packaged runtime, but users should reason about quality through:
+
 - `spectra validate`
-- Expect `Validation: OK`.
-
-2. Baseline policy
-- `spectra validate`
-- Expect `Policy check: OK` on unchanged repo.
-
-3. Adapter generation baseline
-- `spectra adapters --agents claude,cursor,windsurf,copilot,codex,antigravity --target /tmp/spectra-adapters`
-- Expect `Adapter generation: OK`.
-
-4. Skill resolver baseline
-- `spectra skills --task-type api-change`
-- Expect ordered skills + `Skill resolution: OK`.
-
-5. Required dependency fail
-- `spectra skills --task-type api-change --skills testing-plan,api-design`
-- Expect non-zero (required order/dependency violation).
-
-6. Open technical question blocks approval
-- staged approval advanced while one question remains `open`.
-- Expect policy fail.
-
-7. Missing issue reference for open question
-- `open` question row without issue link.
-- Expect policy fail.
-
-8. Review-gate severity blocking
-- unresolved `warning` -> fail.
-- unresolved `critical` -> fail.
-
-9. App change without skill-run update
-- range contains non-README `app/` file change but not `skill-runs.md`.
-- Expect policy fail.
-
-10. Skill-run order mismatch
-- `skill-runs.md` row has graph-inverted order (e.g., `testing-plan,api-design`).
-- Expect policy fail.
-
-11. Invariant change trail
-- range includes `core/invariants.md` change without `spec-history.md` or `arch/decisions.md`.
-- Expect policy fail.
-
-12. Quick lane rejects app changes
-- `spectra quick --type docs --task "refresh docs"` with `app/*` changes present.
-- Expect quick lane fail.
-
-13. Verify-work blocked state
-- Leave unresolved `warning` in `review-gate.md`.
-- Expect `spectra verify --scope app` to fail.
-
-14. Range-aware mode
-- `spectra validate --base <base> --head <head>`
-- Expect same rules enforced over full range.
-
-15. Docs-only range
-- docs-only changes in range.
-- Expect no false-positive policy failures.
+- `spectra eval`
+- `spectra verify`

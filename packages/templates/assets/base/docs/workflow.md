@@ -1,127 +1,124 @@
-# Workflow Guide
+# Workflow
 
-How to resume intake, execute sprints after approval, apply quality gates, and escalate safely.
+Spectra v2 has one default loop:
 
-## Resume Intake
+`define -> validate -> approve -> implement -> eval -> verify -> release`
 
-- Intake progress is tracked through the current feature bundle and `sdd/governance/approval-state.yaml`.
-- If intake is interrupted, run `init` again.
-- Ask only missing mandatory answers first, then continue phase flow.
-- Use `spectra context --role planner --goal decide` to load only the required files.
+## Define
 
-## Intake Decision Loop
-
-For every technical question:
-1. Ask with stable `question_id`.
-2. Present options and recommendation.
-3. Capture explicit user confirmation.
-4. Persist final value to the executable specs.
-5. Append to the decision graph and any supporting decision log.
-
-If unresolved:
-- add row to `Open Technical Questions` (`status: open` + issue reference)
-- block approval until resolved
-
-## After `implementation-approved`
-
-### Scaffolding
-
-After `implementation-approved`, Spectra:
-1. Ensures `app/` exists.
-2. Selects a scaffold from `sdd/system/scaffolds/`.
-3. Generates initial structure under `app/`.
-
-Before coding a task:
-1. Capture intent with `spectra task --item <id> --task-type <type> --goal "<goal>"`.
-2. Review `sdd/memory-bank/core/implementation-brief.md`.
-3. Load implementation context with `spectra context --role implementer --goal implement`.
-
-### Skill Graph Loop (Before Coding)
-
-For each implementation item:
-1. Classify task type (`api-change`, `db-change`, `api-db-change`, etc.).
-2. Resolve skill order:
-   - `spectra skills --task-type <task_type>`
-3. If using explicit skills/order, validate with:
-   - `spectra skills --task-type <task_type> --skills <csv>`
-4. Append run log row to `sdd/memory-bank/core/skill-runs.md`.
-
-Blocking rule:
-- non-zero resolver exit means no coding yet.
-
-### Role-Based Quality Loop
-
-Per implementation item:
-1. Coding pass.
-2. Validation pass.
-3. Challenge pass.
-4. Resolve findings and repeat if needed.
-
-Blocking rule:
-- unresolved `critical` or `warning` findings mean item is not stable.
-
-Record findings in `sdd/memory-bank/core/review-gate.md`.
-
-### Verify Work
-
-Before marking an item ready:
-1. Run `spectra verify --scope app` for implementation work.
-2. Run `spectra verify --scope spec` for spec-only work.
-3. Fix blockers before handoff.
-4. Use `spectra context --role verifier --goal verify` when you need compact verification context.
-5. For release confidence, run `spectra verify --profile release` before `spectra approve --stage release-approved`.
-
-### Quick Lane
-
-For docs/rules/spec/ops work with no `app/*` changes:
+Create a feature bundle:
 
 ```bash
-spectra quick --type docs --task "refresh workflow docs"
+spectra feature init demo-intake --name "Demo Intake Assistant" --type assistant
 ```
 
-If `app/*` changes are detected, quick lane exits non-zero and the full workflow is required.
+Then load planning context:
 
-## Escalation Rules
+```bash
+spectra context --role planner --goal discover
+```
 
-- Max correction iterations per blocked item: `3`.
-- If still blocked:
-  - pause blocked scope
-  - log blocker in `activeContext.md`
-  - mark blocker in `review-gate.md`
-  - request human decision
+## Validate
+
+```bash
+spectra validate
+spectra status
+```
+
+Validation should happen:
+
+- after feature creation
+- after meaningful spec changes
+- before every approval transition
+- before verify
+
+## Approve
+
+Advance the staged approval state explicitly:
+
+```bash
+spectra approve --stage product-approved
+spectra approve --stage technical-approved
+spectra approve --stage implementation-approved
+```
+
+Rule:
+
+- no app implementation before `implementation-approved`
+- no release signoff before `release-approved`
+
+## Implement
+
+Capture intent first:
+
+```bash
+spectra task --item FEAT-001 --task-type feature --goal "Implement demo intake assistant"
+spectra context --role implementer --goal implement
+```
+
+If the task is docs/spec-only:
+
+```bash
+spectra quick --type docs --task "refresh docs"
+```
+
+## Eval
+
+Run feature behavior checks:
+
+```bash
+spectra eval demo-intake --suite smoke
+```
+
+Use release profile checks when preparing to ship:
+
+```bash
+spectra eval demo-intake --suite release
+```
+
+## Verify
+
+```bash
+spectra verify --profile release
+```
+
+Verify aggregates:
+
+- structure
+- policy
+- tests
+- eval readiness
+- telemetry contract coverage
+- release readiness
+
+## Release
+
+Once verify is green:
+
+```bash
+spectra approve --stage release-approved
+```
 
 ## Spec Changes After Approval
 
-When requirements/tech choices change:
-1. Update specs first.
-2. Append to `sdd/memory-bank/core/spec-history.md` when human-readable history is needed.
-3. Optionally run `spectra diff update`.
-4. Re-run validation/policy checks.
-5. If behavior, contracts, or mandatory fields changed, require re-approval.
-
-## Rollback
-
-- Prefer additive history (`git revert`) over rewriting history.
-- Update specs to intended post-rollback state.
-- Record rollback in `sdd/memory-bank/core/spec-history.md`.
-
-## Troubleshooting Snippets
-
-Policy check fails in CI:
+When specs change after approval:
 
 ```bash
-spectra validate --base <base_sha> --head <head_sha>
+spectra diff semantic
+spectra validate
 ```
 
-Skill graph order fails:
+Then re-approve the required stage if the diff invalidated it.
+
+## Brownfield Flow
+
+For existing repos:
 
 ```bash
-spectra skills --task-type <task_type> --skills <csv>
+spectra adopt .
+spectra context --role planner --goal discover
+spectra validate
+spectra diff semantic
 ```
 
-Then use returned `Recommended Order` and log in `skill-runs.md`.
-
-Intake blocked before approval:
-- Resolve all `open` technical questions.
-- Resolve all unresolved `critical`/`warning` findings.
-- Re-run `spectra validate`.
+Use the structured outputs under `sdd/adoption/` to understand gaps before moving into implementation.

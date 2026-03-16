@@ -1,6 +1,6 @@
 # Example: CLI (Reporting Tool)
 
-Use this scenario if you are building a CLI tool.
+Use this scenario if you are building a CLI product with `spectra init` and then creating feature bundles with `spectra feature init`.
 
 ## Phase 1 (Core) Answers
 - Project name: Billing Reports CLI
@@ -38,3 +38,8 @@ Use this scenario if you are building a CLI tool.
 - Testing strategy: Unit+Integration
 - CI/CD needs: Basic (lint+test)
 
+## What You Should See Created
+- `sdd/features/reporting-core/feature.spec.yaml` for CLI scope, commands, and acceptance
+- `sdd/features/reporting-core/technical-decisions.yaml` for distribution, config, and exit code conventions
+- `sdd/features/reporting-core/telemetry-contract.yaml` for success, failure, and usage signals
+- `sdd/governance/approval-state.yaml` for staged approval progress

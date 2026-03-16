@@ -1,30 +1,56 @@
 # Getting Started
 
-This guide explains Spectra end-to-end: installation, intake, validation, staged approval, scaffolding, sprint execution, evals, and release verification.
+This guide explains the end-to-end Spectra v2 workflow in the order teams should actually use it.
 
-Work in two places:
+## 1. Initialize Spectra
 
-- this repo when you are changing the Spectra framework itself
-- your target repo after `npx spectra-pack@latest init /path/to/your-project` once the public package is published
+New repo:
 
-## End-to-End Checklist
+```bash
+npx spectra-pack@latest init my-product
+cd my-product
+```
 
-1. Install Spectra core: `npx spectra-pack@latest init /path/to/your-project`.
-2. Optionally add adapters: `npx spectra-pack@latest init /path/to/your-project --agents claude,cursor,windsurf,copilot,codex,antigravity`.
-3. For brownfield repos, run `npx spectra-pack@latest adopt /path/to/your-project`.
-4. Resolve baseline context with `spectra context --role planner --goal discover`.
-5. Answer Phase 1 (Core) questions. Say **"recommend"** if unsure about any technical choice.
-6. Spectra updates the feature bundle under `sdd/features/<feature-id>/` and staged approval state under `sdd/governance/approval-state.yaml`.
-7. Spectra validates and asks targeted follow-ups if needed.
-8. Continue Phase 2 / 2b; optionally skip Phase 3.
-9. Before implementation work, capture intent with `spectra task --item <id> --task-type <type> --goal "<goal>"`.
-10. Run strict repository validation:
+Brownfield repo:
+
+```bash
+npx spectra-pack@latest adopt .
+```
+
+## 2. Create a feature
+
+Every meaningful change should start with a feature bundle:
+
+```bash
+spectra feature init demo-intake --name "Demo Intake Assistant" --type assistant
+```
+
+That creates:
+
+- `sdd/features/demo-intake/feature.spec.yaml`
+- `sdd/features/demo-intake/ai-behavior-spec.yaml`
+- `sdd/features/demo-intake/telemetry-contract.yaml`
+- `sdd/features/demo-intake/evals/*`
+- `sdd/features/demo-intake/brief.md`
+
+## 3. Plan with the minimum context
+
+```bash
+spectra context --role planner --goal discover
+```
+
+Use context packs by role and goal instead of opening the whole repo.
+
+## 4. Validate before approval
 
 ```bash
 spectra validate
+spectra status
 ```
 
-11. Approve the product, technical, and implementation stages explicitly:
+Validation should pass before any approval moves forward.
+
+## 5. Advance staged approvals
 
 ```bash
 spectra approve --stage product-approved
@@ -32,49 +58,65 @@ spectra approve --stage technical-approved
 spectra approve --stage implementation-approved
 ```
 
-12. Spectra scaffolds project under `app/`.
-13. Spectra executes sprint loop (plan -> skill checks -> code -> test -> verify).
-14. Use `spectra status` to monitor overall status.
+Meaning:
 
-## Core Files To Know
+- `product-approved`: feature intent and scope are accepted
+- `technical-approved`: architecture and technical boundaries are accepted
+- `implementation-approved`: implementation can start
 
-- Feature contract: `sdd/features/<feature-id>/feature.spec.yaml`
-- AI behavior contract: `sdd/features/<feature-id>/ai-behavior-spec.yaml`
-- Telemetry contract: `sdd/features/<feature-id>/telemetry-contract.yaml`
-- Eval contracts: `sdd/features/<feature-id>/evals/`
-- Approval state: `sdd/governance/approval-state.yaml`
-- Decision graph: `sdd/governance/decision-graph.yaml`
-- Context packs: `spectra context --role <role> --goal <goal>` (legacy `--task` aliases are still supported)
-- Active context: `sdd/memory-bank/core/activeContext.md`
-- Progress tracking: `sdd/memory-bank/core/progress.md`
-- Traceability: `sdd/memory-bank/core/traceability.md`
-- Discovery notes and adoption outputs: `sdd/memory-bank/discovery/` and `sdd/adoption/`
-- Implementation brief: `sdd/memory-bank/core/implementation-brief.md`
+## 6. Create implementation intent
 
-## Example Intake Scenarios
+```bash
+spectra task --item FEAT-001 --task-type feature --goal "Implement demo intake assistant"
+```
 
-- Backend API: [`examples/backend-api-orders-service.md`](examples/backend-api-orders-service.md)
-- Web Frontend: [`examples/web-frontend-dashboard.md`](examples/web-frontend-dashboard.md)
-- Full-Stack: [`examples/full-stack-booking-platform.md`](examples/full-stack-booking-platform.md)
-- Worker: [`examples/worker-billing-reconciler.md`](examples/worker-billing-reconciler.md)
-- CLI: [`examples/cli-reporting-tool.md`](examples/cli-reporting-tool.md)
+This writes the implementation brief used during execution and review.
+
+## 7. Implement with role-aware context
+
+```bash
+spectra context --role implementer --goal implement
+```
+
+Use:
+
+- `planner + discover`
+- `planner + decide`
+- `implementer + implement`
+- `verifier + verify`
+- `release-manager + ship`
+
+## 8. Evaluate behavior
+
+```bash
+spectra eval demo-intake --suite smoke
+```
+
+This checks the feature’s eval contracts, golden scenarios, and release thresholds.
+
+## 9. Verify release confidence
+
+```bash
+spectra verify --profile release
+```
+
+Verify is the final release gate. It should answer:
+
+- is the repo structurally valid?
+- is policy current?
+- do eval and telemetry contracts exist?
+- is release confidence high enough?
+
+## 10. Mark release approval
+
+```bash
+spectra approve --stage release-approved
+```
 
 ## Common Mistakes
 
-- Treating staged approval like a single binary flag.
-- Generating code before `implementation-approved`.
-- Skipping validation before approval.
-- Changing mandatory choices after approval without re-approval.
-- Forgetting to update `progress.md` and `activeContext.md` after significant work.
-- Editing Markdown narrative without syncing the YAML contracts it describes.
-
-## Troubleshooting
-
-Validation loops:
-- Fix only reported errors, then re-run validation.
-
-Interrupted intake:
-- Run `init` again; Spectra resumes from the installed repo state and current approval/governance files.
-
-Spec changes after approval:
-- Update specs first, then validate, then re-approve if behavior changed.
+- treating Spectra like a binary `approved / not approved` system
+- editing YAML manually before using the CLI flow
+- skipping `spectra validate`
+- starting implementation before `implementation-approved`
+- treating `verify` like a test runner instead of a release-confidence gate

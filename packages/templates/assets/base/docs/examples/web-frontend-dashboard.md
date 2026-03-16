@@ -1,6 +1,6 @@
 # Example: Web Frontend (Dashboard App)
 
-Use this as a reference for answering `init` prompts.
+Use this as a reference for shaping a frontend analytics product with `spectra init` and then creating feature bundles with `spectra feature init`.
 
 ## Phase 1 (Core) Answers
 - Project name: Analytics Dashboard
@@ -41,7 +41,8 @@ Use this as a reference for answering `init` prompts.
 - Testing strategy: Unit (Vitest) + E2E (Playwright)
 - Environments: Dev + Preview + Prod
 
-## What You Should See Updated
-- `sdd/memory-bank/core/projectbrief.md` (name, purpose, app type, requirements)
-- `sdd/memory-bank/tech/stack.md` (TypeScript/Next.js)
-- `sdd/memory-bank/arch/patterns-overview.md` (component-based)
+## What You Should See Created
+- `sdd/features/dashboard-home/feature.spec.yaml` for KPI, chart, and filter behavior
+- `sdd/features/dashboard-home/technical-decisions.yaml` for component-based architecture and stack choices
+- `sdd/features/dashboard-home/telemetry-contract.yaml` for dashboard usage and failure signals
+- `sdd/governance/approval-state.yaml` for staged approval progress

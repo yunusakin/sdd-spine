@@ -1,6 +1,6 @@
 # Example: Full-Stack (Booking Platform)
 
-Use this as a reference for answering `init` prompts.
+Use this as a reference for shaping a full-stack product with `spectra init` and then creating feature bundles with `spectra feature init`.
 
 ## Phase 1 (Core) Answers
 - Project name: Room Booking Platform
@@ -54,7 +54,8 @@ Use this as a reference for answering `init` prompts.
 - Testing strategy: Unit (Vitest) + Integration (Supertest) + E2E (Playwright)
 - Environments: Dev + Staging + Prod
 
-## What You Should See Updated
-- `sdd/memory-bank/core/projectbrief.md` (name, purpose, full-stack type, requirements)
-- `sdd/memory-bank/tech/stack.md` (TypeScript/Next.js/Express/PostgreSQL)
-- `sdd/memory-bank/arch/patterns-overview.md` (layered)
+## What You Should See Created
+- `sdd/features/booking-core/feature.spec.yaml` for booking scope and acceptance
+- `sdd/features/booking-core/technical-decisions.yaml` for layered architecture and stack choices
+- `sdd/features/booking-core/telemetry-contract.yaml` for booking completion and failure signals
+- `sdd/governance/approval-state.yaml` for staged approval progress

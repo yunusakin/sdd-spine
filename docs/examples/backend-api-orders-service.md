@@ -1,6 +1,6 @@
 # Example: Backend API (Orders Service)
 
-Use this as a reference for answering `init` prompts.
+Use this as a reference for shaping a backend API project with `spectra init` and then creating feature bundles with `spectra feature init`.
 
 ## Phase 1 (Core) Answers
 - Project name: Customer Orders Service
@@ -51,7 +51,8 @@ Use this as a reference for answering `init` prompts.
 - Testing strategy: Unit+Integration
 - Environments: Dev+Stage+Prod
 
-## What You Should See Updated
-- `sdd/memory-bank/core/projectbrief.md` (name, purpose, app type, product context, requirements, constraints)
-- `sdd/memory-bank/tech/stack.md` (language/framework/db + versions)
-- `sdd/memory-bank/arch/patterns-overview.md` (hexagonal)
+## What You Should See Created
+- `sdd/features/orders-api/feature.spec.yaml` for scope, requirements, and acceptance
+- `sdd/features/orders-api/technical-decisions.yaml` for hexagonal architecture and stack choices
+- `sdd/features/orders-api/telemetry-contract.yaml` for API success and failure signals
+- `sdd/governance/approval-state.yaml` for staged approval progress

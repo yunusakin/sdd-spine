@@ -1,6 +1,6 @@
 # Example: Worker/Batch (Billing Reconciler)
 
-Use this scenario if you are building a scheduled job or queue consumer.
+Use this scenario if you are building a worker or scheduled job with `spectra init` and then creating feature bundles with `spectra feature init`.
 
 ## Phase 1 (Core) Answers
 - Project name: Billing Reconciler Worker
@@ -35,3 +35,8 @@ Use this scenario if you are building a scheduled job or queue consumer.
 - Config/secrets management: Env vars
 - Compliance/security constraints: PII
 
+## What You Should See Created
+- `sdd/features/billing-reconcile/feature.spec.yaml` for reconciliation behavior and acceptance
+- `sdd/features/billing-reconcile/technical-decisions.yaml` for event-driven processing, retries, and idempotency
+- `sdd/features/billing-reconcile/telemetry-contract.yaml` for throughput, discrepancy, and failure signals
+- `sdd/governance/approval-state.yaml` for staged approval progress

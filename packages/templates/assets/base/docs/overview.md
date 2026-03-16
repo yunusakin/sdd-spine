@@ -1,50 +1,66 @@
 # Spectra Overview
 
-## Purpose
+Spectra is the CLI operating system for AI-assisted product development.
 
-Spectra is a CLI-first operating system for AI-assisted product development.
-It combines executable specs, staged approvals, workflow guardrails, evals, and release checks so implementation stays aligned with intent.
-The canonical runtime is agent-independent; tool-specific instruction files are generated artifacts, not source of truth.
+It gives teams one opinionated flow:
 
-## Core Principles
+1. define executable specs
+2. validate structure and policy
+3. advance staged approvals
+4. implement with role-aware context
+5. evaluate and verify before release
 
-- Specs first, code second.
-- No application code before explicit `implementation-approved`.
-- Structured state lives in YAML; long-form context stays in Markdown.
-- Persistent memory across sessions (`sdd/memory-bank/`).
-- Technical choices must be confirmed and logged.
-- Delivery loop includes validation, eval, telemetry, and release confidence gates.
-- Canonical rules live under `sdd/system/`.
+## What Makes v2 Different
 
-## Lifecycle
+### CLI-first
 
-1. Intake: collect product intent, technical architecture, AI behavior, evaluation, and release decisions.
-2. Decision capture: log confirmed choices and unresolved questions.
-3. Specs: write/update feature YAML contracts and supporting brief docs.
-4. Validation: resolve missing, inconsistent, or stale state.
-5. Approval: advance through `product-approved`, `technical-approved`, and `implementation-approved`.
-6. Scaffold: generate project skeleton under `app/`.
-7. Discuss implementation intent: write `implementation-brief.md`.
-8. Sprint loop: code -> validate -> review -> resolve/escalate.
-9. Verify work: aggregate tests, evals, telemetry, and release readiness.
-10. Ship: run release verification and advance to `release-approved`.
+The product entry point is `spectra`, not `bash scripts/...` and not chat-only magic phrases.
 
-## Key Paths
+### Executable specs
 
-- `packages/cli/` - public CLI package and packaged assets.
-- `packages/core/` - internal runtime source assets.
-- `packages/templates/` - internal template source assets.
-- `sdd/features/` - canonical executable spec bundles.
-- `sdd/governance/` - approval state and decision graph.
-- `sdd/system/` - canonical rules, runtime manifests, skills, scaffolds, prompts, adapters.
-- `sdd/memory-bank/` - long-form human context and operational history.
-- `sdd/adoption/` - structured brownfield discovery and gap analysis outputs.
-- `app/` - application code only (post-approval).
-- `docs/` - guides and examples.
+Feature state lives under `sdd/features/<feature-id>/` as YAML contracts plus a short Markdown brief.
 
-## Next Docs
+### Staged approvals
 
-- [Quick Start](quick-start.md)
-- [Getting Started](getting-started.md)
-- [Structure](structure.md)
-- [Workflow Guide](workflow.md)
+Spectra uses:
+
+- `draft`
+- `product-approved`
+- `technical-approved`
+- `implementation-approved`
+- `release-approved`
+
+Implementation is blocked until `implementation-approved`.
+
+### Eval and verify
+
+`spectra eval` measures behavior contracts.  
+`spectra verify` aggregates validation, policy, tests, eval readiness, telemetry coverage, and release confidence.
+
+### Token-aware context
+
+`spectra context --role <role> --goal <goal>` loads the minimum useful context instead of dumping the whole repo into every agent.
+
+## Canonical State
+
+Structured source of truth:
+
+- `sdd/features/<feature-id>/feature.spec.yaml`
+- `sdd/features/<feature-id>/ai-behavior-spec.yaml`
+- `sdd/features/<feature-id>/telemetry-contract.yaml`
+- `sdd/features/<feature-id>/evals/*`
+- `sdd/governance/approval-state.yaml`
+- `sdd/governance/decision-graph.yaml`
+
+Human-readable support context:
+
+- `sdd/features/<feature-id>/brief.md`
+- optional supporting notes under `sdd/memory-bank/`
+
+## Recommended Reading Order
+
+1. [Quick Start](quick-start.md)
+2. [CLI Reference](cli-reference.md)
+3. [Structure](structure.md)
+4. [Workflow](workflow.md)
+5. [Minimal Feature Example](examples/minimal-feature/README.md)

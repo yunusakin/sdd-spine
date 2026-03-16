@@ -13,6 +13,7 @@ This package installs the `spectra` CLI and includes the runtime and template as
 ```bash
 npx spectra-pack@latest init /path/to/project
 cd /path/to/project
+spectra feature init demo-intake --name "Demo Intake Assistant" --type assistant
 spectra validate
 spectra status
 ```
@@ -45,6 +46,7 @@ spectra adopt [path]
 Workflow:
 
 ```bash
+spectra feature init demo-intake --name "Demo Intake Assistant" --type assistant
 spectra context --role planner --goal discover
 spectra task --item TASK-001 --task-type bugfix --goal "Describe intended change"
 spectra approve --stage implementation-approved
@@ -75,6 +77,7 @@ Spectra initializes a repository with:
 
 - [Repository README](https://github.com/yunusakin/spectra#readme)
 - [Quick Start](https://github.com/yunusakin/spectra/blob/main/docs/quick-start.md)
+- [CLI Reference](https://github.com/yunusakin/spectra/blob/main/docs/cli-reference.md)
 - [Structure](https://github.com/yunusakin/spectra/blob/main/docs/structure.md)
 - [Workflow](https://github.com/yunusakin/spectra/blob/main/docs/workflow.md)
 - [Issues](https://github.com/yunusakin/spectra/issues)
