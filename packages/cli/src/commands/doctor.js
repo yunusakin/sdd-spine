@@ -168,7 +168,7 @@ function doctorCommand(argv) {
       return validateCommand(["--cwd", repoRoot]);
     }
 
-    hasFailure = printAgentHealth(repoRoot);
+    hasFailure = printAgentHealth(repoRoot) || hasFailure;
   } else {
     warn(`No Spectra runtime found from ${startDir}`);
   }
