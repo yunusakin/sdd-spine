@@ -143,3 +143,50 @@ test("local adopt refuses a tracked adapter collision before installing", () => 
   assert.equal(fs.existsSync(path.join(root, "spectra")), false);
   assert.equal(fs.readFileSync(path.join(root, "AGENTS.md"), "utf8"), "company instructions\n");
 });
+
+test("adopt runs map-codebase.sh with valid arguments and produces discovery output", () => {
+  const root = createRepo();
+  const result = run(root, process.execPath, [cliPath, "adopt", ".", "--git-mode", "local"]);
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.equal(
+    fs.existsSync(path.join(root, "spectra", "sdd", "memory-bank", "tech", "modules.md")),
+    true
+  );
+  assert.equal(
+    fs.existsSync(path.join(root, "spectra", "sdd", "memory-bank", "business", "INDEX.md")),
+    true
+  );
+  assert.equal(
+    fs.existsSync(path.join(root, "spectra", "sdd", "memory-bank", "discovery")),
+    true
+  );
+});
+
+function makeBrokenAssetsDir() {
+  const assetsDir = fs.mkdtempSync(path.join(os.tmpdir(), "spectra-broken-assets-"));
+  const sourceAssetsDir = path.join(cliRoot, "assets");
+  fs.cpSync(sourceAssetsDir, assetsDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(assetsDir, "runtime", "scripts", "map-codebase.sh"),
+    "#!/usr/bin/env bash\necho 'boom' >&2\nexit 1\n"
+  );
+  fs.chmodSync(path.join(assetsDir, "runtime", "scripts", "map-codebase.sh"), 0o755);
+  return assetsDir;
+}
+
+test("adopt fails loudly when map-codebase.sh exits non-zero", () => {
+  const root = createRepo();
+  const brokenAssetsDir = makeBrokenAssetsDir();
+
+  try {
+    const result = run(root, process.execPath, [cliPath, "adopt", ".", "--git-mode", "local"], {
+      env: { SPECTRA_ASSETS_DIR: brokenAssetsDir }
+    });
+
+    assert.notEqual(result.status, 0);
+    assert.doesNotMatch(result.stdout, /Adopted Spectra/);
+  } finally {
+    fs.rmSync(brokenAssetsDir, { recursive: true, force: true });
+  }
+});

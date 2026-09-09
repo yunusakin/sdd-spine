@@ -177,7 +177,7 @@ function findSpectraRoot(startDir = process.cwd()) {
   }
 }
 
-function runInstalledScript({ cwd, scriptName, args = [] }) {
+function runInstalledScript({ cwd, scriptName, args = [], strict = false }) {
   const repoRoot = findSpectraRoot(cwd);
 
   if (!repoRoot) {
@@ -208,7 +208,12 @@ function runInstalledScript({ cwd, scriptName, args = [] }) {
     throw result.error;
   }
 
-  return result.status ?? 1;
+  const status = result.status ?? 1;
+  if (strict && status !== 0) {
+    throw new Error(`${scriptName} exited with status ${status}`);
+  }
+
+  return status;
 }
 
 function removeFinderArtifacts(rootDir) {

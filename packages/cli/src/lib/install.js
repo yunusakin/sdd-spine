@@ -201,7 +201,8 @@ function installSpectra({
     runInstalledScript({
       cwd: absoluteTarget,
       scriptName: "map-codebase.sh",
-      args: ["--root", absoluteTarget, "--spectra-root", layout.root]
+      args: ["--root", absoluteTarget, "--spectra-root", layout.root],
+      strict: true
     });
     if (normalizedProfile === "full") {
       buildAdoptionArtifacts(layout.root);
